@@ -33,7 +33,6 @@ pub fn main() {
 
   extract_area(img, at: bounding_box.LTWH(left: 3, top: 3, width: 6, height: 6))
   |> result.map(write(_, "extract.png"))
-
 }
 
 pub type Image
@@ -44,6 +43,12 @@ pub fn from_bit_array(bin: BitArray) -> Result(Image, snag.Snag) {
   |> snag.context("Failed to read image from bit array")
 }
 
+@external(erlang, "Elixir.Ansel", "from_bit_array")
+fn from_bit_array_ffi(bin: BitArray) -> Result(Image, String)
+
+@external(erlang, "Elixir.Ansel", "to_bit_array")
+pub fn to_bit_array(img: Image, format: String) -> BitArray
+
 pub fn new_image(
   width width: Int,
   height height: Int,
@@ -53,6 +58,13 @@ pub fn new_image(
   |> result.map_error(snag.new)
   |> snag.context("Failed to create new image")
 }
+
+@external(erlang, "Elixir.Ansel", "new_image")
+fn new_image_ffi(
+  width: Int,
+  height: Int,
+  color: List(Int),
+) -> Result(Image, String)
 
 pub fn extract_area(
   from image: Image,
@@ -65,6 +77,15 @@ pub fn extract_area(
   |> snag.context("Failed to extract area from image")
 }
 
+@external(erlang, "Elixir.Vix.Vips.Operation", "extract_area")
+fn extract_area_ffi(
+  image: Image,
+  x: Int,
+  y: Int,
+  w: Int,
+  h: Int,
+) -> Result(Image, String)
+
 pub fn composite_over(
   base: Image,
   with overlay: Image,
@@ -76,34 +97,6 @@ pub fn composite_over(
   |> snag.context("Failed to composite overlay image over base image")
 }
 
-pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
-  write_ffi(img, path)
-  |> result.map_error(snag.new)
-  |> snag.context("Failed to write image to file")
-}
-
-@external(erlang, "Elixir.Ansel", "to_bit_array")
-pub fn to_bit_array(img: Image, format: String) -> BitArray
-
-@external(erlang, "Elixir.Ansel", "new_image")
-fn new_image_ffi(
-  width: Int,
-  height: Int,
-  color: List(Int),
-) -> Result(Image, String)
-
-@external(erlang, "Elixir.Ansel", "from_bit_array")
-fn from_bit_array_ffi(bin: BitArray) -> Result(Image, String)
-
-@external(erlang, "Elixir.Vix.Vips.Operation", "extract_area")
-fn extract_area_ffi(
-  image: Image,
-  x: Int,
-  y: Int,
-  w: Int,
-  h: Int,
-) -> Result(Image, String)
-
 @external(erlang, "Elixir.Ansel", "composite_over")
 fn composite_over_ffi(
   base: Image,
@@ -111,6 +104,12 @@ fn composite_over_ffi(
   x: Int,
   y: Int,
 ) -> Result(Image, String)
+
+pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
+  write_ffi(img, path)
+  |> result.map_error(snag.new)
+  |> snag.context("Failed to write image to file")
+}
 
 @external(erlang, "Elixir.Ansel", "write_to_file")
 fn write_ffi(img: Image, to path: String) -> Result(Nil, String)

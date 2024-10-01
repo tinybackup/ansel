@@ -27,3 +27,55 @@ pub fn to_x1y1x2y2_tuple(bounding_box: BoundingBox) {
     X1Y1X2Y2(x1, y1, x2, y2) -> #(x1, y1, x2, y2)
   }
 }
+
+pub fn shrink(bounding_box: BoundingBox, by amount: Int) {
+  case bounding_box {
+    LTWH(left, top, width, height) ->
+      LTWH(
+        left: left + amount,
+        top: top + amount,
+        width: width - amount * 2,
+        height: height - amount * 2,
+      )
+    LTRB(left, top, right, bottom) ->
+      LTRB(
+        left: left + amount,
+        top: top + amount,
+        right: right - amount,
+        bottom: bottom - amount,
+      )
+    X1Y1X2Y2(x1, y1, x2, y2) ->
+      X1Y1X2Y2(
+        x1: x1 + amount,
+        y1: y1 + amount,
+        x2: x2 - amount,
+        y2: y2 - amount,
+      )
+  }
+}
+
+pub fn expand(bounding_box: BoundingBox, by amount: Int) {
+  case bounding_box {
+    LTWH(left, top, width, height) ->
+      LTWH(
+        left: left - amount,
+        top: top - amount,
+        width: width + amount * 2,
+        height: height + amount * 2,
+      )
+    LTRB(left, top, right, bottom) ->
+      LTRB(
+        left: left - amount,
+        top: top - amount,
+        right: right + amount,
+        bottom: bottom + amount,
+      )
+    X1Y1X2Y2(x1, y1, x2, y2) ->
+      X1Y1X2Y2(
+        x1: x1 - amount,
+        y1: y1 - amount,
+        x2: x2 + amount,
+        y2: y2 + amount,
+      )
+  }
+}
