@@ -1,3 +1,5 @@
+import ansel/bounding_box
+import ansel/color
 import gleam/io
 import gleam/result
 import simplifile
@@ -6,30 +8,27 @@ import snag
 pub fn main() {
   io.println("Hello from ansel!")
 
-  let assert Ok(base) =
-    simplifile.read_bits("test.jpg")
-    |> result.unwrap(<<>>)
-    |> from_bit_array
+  // let assert Ok(base) =
+  //   simplifile.read_bits("test.jpg")
+  //   |> result.unwrap(<<>>)
+  //   |> from_bit_array
 
-  let assert Ok(overlay) =
-    simplifile.read_bits("ss.png")
-    |> result.unwrap(<<>>)
-    |> from_bit_array
+  // let assert Ok(overlay) =
+  //   simplifile.read_bits("ss.png")
+  //   |> result.unwrap(<<>>)
+  //   |> from_bit_array
 
-  let _ =
-    composite_over(base, overlay, 1, 1)
-    |> result.map(write(_, "out.jpg"))
+  // let _ =
+  //   composite_over(base, overlay, 1, 1)
+  //   |> result.map(write(_, "out.jpg"))
 
-  base
-  |> extract_area(LTWH(left: 100, top: 100, width: 400, height: 400))
+  // base
+  // |> extract_area(LTWH(left: 100, top: 100, width: 400, height: 400))
+  // |> result.map(write(_, "out2.jpg"))
+  // |> io.debug
+
+  new_image(width: 100, height: 100, color: color.Grey)
   |> result.map(write(_, "out2.jpg"))
-  |> io.debug
-}
-
-pub type BoundingBox {
-  LTWH(left: Int, top: Int, width: Int, height: Int)
-  LTRB(left: Int, top: Int, right: Int, bottom: Int)
-  X1Y1X2Y2(x1: Int, y1: Int, x2: Int, y2: Int)
 }
 
 pub type Image
@@ -40,22 +39,33 @@ pub fn from_bit_array(bin: BitArray) -> Result(Image, snag.Snag) {
   |> snag.context("Failed to read image from bit array")
 }
 
-pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
-  write_ffi(img, path)
+pub fn new_image(
+  width width: Int,
+  height height: Int,
+  color color: color.Color,
+) -> Result(Image, snag.Snag) {
+  new_image_ffi(width, height, color.to_bands(color))
   |> result.map_error(snag.new)
-  |> snag.context("Failed to write image to file")
+  |> snag.context("Failed to create new image")
 }
+
+@external(erlang, "Elixir.Ansel", "new_image")
+fn new_image_ffi(
+  width: Int,
+  height: Int,
+  color: List(Int),
+) -> Result(Image, String)
 
 pub fn extract_area(
   from image: Image,
-  at bounding_box: BoundingBox,
+  at bounding_box: bounding_box.BoundingBox,
 ) -> Result(Image, snag.Snag) {
   case bounding_box {
-    LTWH(left, top, width, height) ->
+    bounding_box.LTWH(left, top, width, height) ->
       extract_area_ffi(image, left, top, width, height)
-    LTRB(left, top, right, bottom) ->
+    bounding_box.LTRB(left, top, right, bottom) ->
       extract_area_ffi(image, left, top, right - left, bottom - top)
-    X1Y1X2Y2(x1, y1, x2, y2) ->
+    bounding_box.X1Y1X2Y2(x1, y1, x2, y2) ->
       extract_area_ffi(image, x1, y1, x2 - x1, y2 - y1)
   }
   |> result.map_error(snag.new)
@@ -71,6 +81,12 @@ pub fn composite_over(
   composite_over_ffi(base, overlay, l, t)
   |> result.map_error(snag.new)
   |> snag.context("Failed to composite overlay image over base image")
+}
+
+pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
+  write_ffi(img, path)
+  |> result.map_error(snag.new)
+  |> snag.context("Failed to write image to file")
 }
 
 @external(erlang, "Elixir.Ansel", "from_bit_array")

@@ -34,4 +34,20 @@ defmodule Ansel do
   def extract_area(image, x, y, w, h) do
     Operation.extract_area(image, x, y, w, h)
   end
+
+  def new_image(height, width, background) do
+    case Operation.black(height, width, bands: 3) do
+      {:ok, img} ->
+        Image.new_from_image(img, background)
+        # Operation.add(img,)
+        # # Operation.linear(img, [1.0, 1.0, 1.0], [125.0, 1.0, 28.0])
+        # Operation.embed(img, 0, 0, 200, 200,
+        #   backgound: [240.0, 28.0, 128.0],
+        #   # extend: :VIPS_EXTEND_BACKGROUND
+        # )
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 end
