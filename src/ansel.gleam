@@ -1,39 +1,23 @@
 import ansel/bounding_box
 import ansel/color
 import gleam/int
-import gleam/io
 import gleam/result
-import simplifile
 import snag
 
-pub fn main() {
-  io.println("Hello from ansel!")
+pub type ImageFormat {
+  AVIF(quality: Int)
+  JPG(quality: Int)
+  PNG
+  WEBP(quality: Int)
+}
 
-  // let assert Ok(base) =
-  //   simplifile.read_bits("test.jpg")
-  //   |> result.unwrap(<<>>)
-  //   |> from_bit_array
-
-  // let assert Ok(overlay) =
-  //   simplifile.read_bits("ss.png")
-  //   |> result.unwrap(<<>>)
-  //   |> from_bit_array
-
-  // let _ =
-  //   composite_over(base, overlay, 1, 1)
-  //   |> result.map(write(_, "out.jpg"))
-
-  // base
-  // |> extract_area(LTWH(left: 100, top: 100, width: 400, height: 400))
-  // |> result.map(write(_, "out2.jpg"))
-  // |> io.debug
-
-  let assert Ok(bin) = simplifile.read_bits("comp.png")
-
-  let assert Ok(img) = from_bit_array(bin)
-
-  extract_area(img, at: bounding_box.LTWH(left: 3, top: 3, width: 6, height: 6))
-  |> result.map(write(_, "extract.png"))
+fn image_format_to_string(format: ImageFormat) -> String {
+  case format {
+    PNG -> ".png"
+    JPG(quality) -> ".jpg[Q=" <> int.to_string(quality) <> "]"
+    WEBP(quality) -> ".webp[Q=" <> int.to_string(quality) <> "]"
+    AVIF(quality) -> ".avif[Q=" <> int.to_string(quality) <> "]"
+  }
 }
 
 pub type Image
@@ -44,11 +28,15 @@ pub fn from_bit_array(bin: BitArray) -> Result(Image, snag.Snag) {
   |> snag.context("Failed to read image from bit array")
 }
 
-@external(erlang, "Elixir.Ansel", "from_bit_array")
+@external(erlang, "Elixir.Vix.Vips.Image", "new_from_buffer")
 fn from_bit_array_ffi(bin: BitArray) -> Result(Image, String)
 
+pub fn to_bit_array(img: Image, format: ImageFormat) -> BitArray {
+  to_bit_array_ffi(img, image_format_to_string(format))
+}
+
 @external(erlang, "Elixir.Ansel", "to_bit_array")
-pub fn to_bit_array(img: Image, format: String) -> BitArray
+fn to_bit_array_ffi(img: Image, format: String) -> BitArray
 
 pub fn new_image(
   width width: Int,
@@ -123,8 +111,12 @@ pub fn resize_by(img: Image, scale scale: Float) -> Result(Image, snag.Snag) {
 @external(erlang, "Elixir.Vix.Vips.Operation", "resize")
 fn resize_ffi(img: Image, scale: Float) -> Result(Image, String)
 
-pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
-  write_ffi(img, path)
+pub fn write(
+  img: Image,
+  to path: String,
+  in format: ImageFormat,
+) -> Result(Nil, snag.Snag) {
+  write_ffi(img, path <> image_format_to_string(format))
   |> result.map_error(snag.new)
   |> snag.context("Failed to write image to file")
 }
