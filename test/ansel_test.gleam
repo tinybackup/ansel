@@ -44,11 +44,11 @@ pub fn bit_array_avif_round_trip_test() {
   |> should.equal(Ok(bin))
 }
 
-pub fn bit_array_jpg_round_trip_test() {
-  let assert Ok(bin) = simplifile.read_bits("test/resources/gleam_lucy_6x6.jpg")
+pub fn bit_array_jpeg_round_trip_test() {
+  let assert Ok(bin) = simplifile.read_bits("test/resources/gleam_lucy_6x6.jpeg")
 
   ansel.from_bit_array(bin)
-  |> result.map(ansel.to_bit_array(_, ansel.JPG(quality: 100)))
+  |> result.map(ansel.to_bit_array(_, ansel.JPEG(quality: 100)))
   |> should.equal(Ok(bin))
 }
 

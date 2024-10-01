@@ -6,7 +6,7 @@ import snag
 
 pub type ImageFormat {
   AVIF(quality: Int)
-  JPG(quality: Int)
+  JPEG(quality: Int)
   PNG
   WEBP(quality: Int)
 }
@@ -14,7 +14,7 @@ pub type ImageFormat {
 fn image_format_to_string(format: ImageFormat) -> String {
   case format {
     PNG -> ".png"
-    JPG(quality) -> ".jpg[Q=" <> int.to_string(quality) <> "]"
+    JPEG(quality) -> ".jpeg[Q=" <> int.to_string(quality) <> "]"
     WEBP(quality) -> ".webp[Q=" <> int.to_string(quality) <> "]"
     AVIF(quality) -> ".avif[Q=" <> int.to_string(quality) <> "]"
   }
