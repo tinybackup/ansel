@@ -5,18 +5,48 @@ import gleam/result
 import snag
 
 pub type ImageFormat {
-  AVIF(quality: Int)
   JPEG(quality: Int)
+  JPEG2000
+  JPEGXL
   PNG
-  WEBP(quality: Int)
+  WebP(quality: Int)
+  AVIF(quality: Int)
+  TIFF
+  HEIC
+  FITS
+  Matlab
+  PDF
+  SVG
+  HDR
+  PPM
+  CSV
+  GIF
+  Analyze
+  NIfTI
+  DeepZoom
 }
 
 fn image_format_to_string(format: ImageFormat) -> String {
   case format {
-    PNG -> ".png"
     JPEG(quality) -> ".jpeg[Q=" <> int.to_string(quality) <> "]"
-    WEBP(quality) -> ".webp[Q=" <> int.to_string(quality) <> "]"
+    JPEG2000 -> ".jp2"
+    JPEGXL -> ".jxl"
+    PNG -> ".png"
+    WebP(quality) -> ".webp[Q=" <> int.to_string(quality) <> "]"
     AVIF(quality) -> ".avif[Q=" <> int.to_string(quality) <> "]"
+    TIFF -> ".tiff"
+    HEIC -> ".heic"
+    FITS -> ".fits"
+    Matlab -> ".mat"
+    PDF -> ".pdf"
+    SVG -> ".svg"
+    HDR -> ".hdr"
+    PPM -> ".ppm"
+    CSV -> ".csv"
+    GIF -> ".gif"
+    Analyze -> ".analyze"
+    NIfTI -> ".nii"
+    DeepZoom -> ".dzi"
   }
 }
 
