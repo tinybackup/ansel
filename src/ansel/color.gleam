@@ -2,6 +2,7 @@ pub type Color {
   RGBA(r: Int, g: Int, b: Int, a: Int)
   RGB(r: Int, g: Int, b: Int)
   GleamLucy
+  GleamNavy
   Maroon
   DarkRed
   Brown
@@ -163,6 +164,7 @@ pub fn to_rgb_tuple(color: Color) {
     RGBA(r, g, b, _) -> #(r, g, b)
     RGB(r, g, b) -> #(r, g, b)
     GleamLucy -> #(255, 175, 243)
+    GleamNavy -> #(41, 45, 62)
     Maroon -> #(128, 0, 0)
     DarkRed -> #(139, 0, 0)
     Brown -> #(165, 42, 42)
