@@ -118,3 +118,75 @@ pub fn get_height_test() {
   ansel.get_height(img)
   |> should.equal(4)
 }
+
+pub fn resize_width_down_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 4, color: color.GleamLucy)
+
+  ansel.resize_width_to(img, res: 3)
+  |> result.map(ansel.to_bit_array(_, ".png"))
+  |> should.equal(
+    ansel.new_image(width: 3, height: 2, color: color.GleamLucy)
+    |> result.map(ansel.to_bit_array(_, ".png")),
+  )
+}
+
+pub fn resize_width_up_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 4, color: color.GleamLucy)
+
+  ansel.resize_width_to(img, res: 12)
+  |> result.map(ansel.to_bit_array(_, ".png"))
+  |> should.equal(
+    ansel.new_image(width: 12, height: 8, color: color.GleamLucy)
+    |> result.map(ansel.to_bit_array(_, ".png")),
+  )
+}
+
+pub fn resize_height_down_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 8, color: color.GleamLucy)
+
+  ansel.resize_height_to(img, res: 4)
+  |> result.map(ansel.to_bit_array(_, ".png"))
+  |> should.equal(
+    ansel.new_image(width: 3, height: 4, color: color.GleamLucy)
+    |> result.map(ansel.to_bit_array(_, ".png")),
+  )
+}
+
+pub fn resize_height_up_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 4, color: color.GleamNavy)
+
+  ansel.resize_height_to(img, res: 12)
+  |> result.map(ansel.to_bit_array(_, ".png"))
+  |> should.equal(
+    ansel.new_image(width: 18, height: 12, color: color.GleamNavy)
+    |> result.map(ansel.to_bit_array(_, ".png")),
+  )
+}
+
+pub fn resize_scale_down_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 4, color: color.GleamLucy)
+
+  ansel.resize_by(img, scale: 0.5)
+  |> result.map(ansel.to_bit_array(_, ".png"))
+  |> should.equal(
+    ansel.new_image(width: 3, height: 2, color: color.GleamLucy)
+    |> result.map(ansel.to_bit_array(_, ".png")),
+  )
+}
+
+pub fn resize_scale_up_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 4, color: color.GleamNavy)
+
+  ansel.resize_by(img, scale: 3.0)
+  |> result.map(ansel.to_bit_array(_, ".png"))
+  |> should.equal(
+    ansel.new_image(width: 18, height: 12, color: color.GleamNavy)
+    |> result.map(ansel.to_bit_array(_, ".png")),
+  )
+}

@@ -39,4 +39,8 @@ defmodule Ansel do
         {:error, reason}
     end
   end
+
+  def resize(img, scale) do
+    Operation.resize(img, scale)
+  end
 end

@@ -1,5 +1,6 @@
 import ansel/bounding_box
 import ansel/color
+import gleam/int
 import gleam/io
 import gleam/result
 import simplifile
@@ -104,6 +105,23 @@ fn composite_over_ffi(
   x: Int,
   y: Int,
 ) -> Result(Image, String)
+
+pub fn resize_width_to(img: Image, res width: Int) -> Result(Image, snag.Snag) {
+  resize_by(img, scale: int.to_float(width) /. int.to_float(get_width(img)))
+}
+
+pub fn resize_height_to(img: Image, res height: Int) -> Result(Image, snag.Snag) {
+  resize_by(img, scale: int.to_float(height) /. int.to_float(get_height(img)))
+}
+
+pub fn resize_by(img: Image, scale scale: Float) -> Result(Image, snag.Snag) {
+  resize_ffi(img, scale)
+  |> result.map_error(snag.new)
+  |> snag.context("Failed to resize image")
+}
+
+@external(erlang, "Elixir.Vix.Vips.Operation", "resize")
+fn resize_ffi(img: Image, scale: Float) -> Result(Image, String)
 
 pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
   write_ffi(img, path)
