@@ -18,13 +18,8 @@ defmodule Ansel do
     end
   end
 
-  # Image.write_to_buffer only supports png, jpg, and tiff formats so
-  # it is not very useful to us :/
   def to_bit_array(image, format) do
-    case Image.write_to_buffer(image, format) do
-      {:ok, binary} -> {:ok, binary}
-      {:error, reason} -> {:error, reason}
-    end
+    Image.write_to_stream(image, format) |> Enum.into(<<>>)
   end
 
   def composite_over(base_image, overlay_image, l, t) do

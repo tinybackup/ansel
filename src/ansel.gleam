@@ -27,8 +27,13 @@ pub fn main() {
   // |> result.map(write(_, "out2.jpg"))
   // |> io.debug
 
-  new_image(width: 100, height: 100, color: color.Grey)
-  |> result.map(write(_, "out2.jpg"))
+  let assert Ok(bin) = simplifile.read_bits("comp.png")
+
+  let assert Ok(img) = from_bit_array(bin)
+
+  extract_area(img, at: bounding_box.LTWH(left: 3, top: 3, width: 6, height: 6))
+  |> result.map(write(_, "extract.png"))
+
 }
 
 pub type Image
@@ -48,13 +53,6 @@ pub fn new_image(
   |> result.map_error(snag.new)
   |> snag.context("Failed to create new image")
 }
-
-@external(erlang, "Elixir.Ansel", "new_image")
-fn new_image_ffi(
-  width: Int,
-  height: Int,
-  color: List(Int),
-) -> Result(Image, String)
 
 pub fn extract_area(
   from image: Image,
@@ -83,6 +81,16 @@ pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
   |> result.map_error(snag.new)
   |> snag.context("Failed to write image to file")
 }
+
+@external(erlang, "Elixir.Ansel", "to_bit_array")
+pub fn to_bit_array(img: Image, format: String) -> BitArray
+
+@external(erlang, "Elixir.Ansel", "new_image")
+fn new_image_ffi(
+  width: Int,
+  height: Int,
+  color: List(Int),
+) -> Result(Image, String)
 
 @external(erlang, "Elixir.Ansel", "from_bit_array")
 fn from_bit_array_ffi(bin: BitArray) -> Result(Image, String)
