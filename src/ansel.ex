@@ -1,6 +1,10 @@
 defmodule Ansel do
   alias Vix.Vips.{Image, Operation}
 
+  def read(path) do
+    Path.expand(path) |> Image.new_from_file
+  end
+
   def write_to_file(img, path) do
     save_path = Path.expand(path)
 

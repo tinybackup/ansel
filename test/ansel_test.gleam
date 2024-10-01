@@ -10,6 +10,13 @@ pub fn main() {
   gleeunit.main()
 }
 
+pub fn read_test() {
+  let assert Ok(img) = ansel.read("test/resources/gleam_lucy_6x6.avif")
+
+  ansel.get_width(img)
+  |> should.equal(6)
+}
+
 pub fn new_image_solid_grey_test() {
   let assert Ok(bin) =
     simplifile.read_bits("test/resources/solid_grey_6x6.avif")

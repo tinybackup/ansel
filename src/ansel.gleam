@@ -94,6 +94,12 @@ fn composite_over_ffi(
   y: Int,
 ) -> Result(Image, String)
 
+@external(erlang, "Elixir.Vix.Vips.Image", "width")
+pub fn get_width(image: Image) -> Int
+
+@external(erlang, "Elixir.Vix.Vips.Image", "height")
+pub fn get_height(image: Image) -> Int
+
 pub fn resize_width_to(img: Image, res width: Int) -> Result(Image, snag.Snag) {
   resize_by(img, scale: int.to_float(width) /. int.to_float(get_width(img)))
 }
@@ -124,8 +130,11 @@ pub fn write(
 @external(erlang, "Elixir.Ansel", "write_to_file")
 fn write_ffi(img: Image, to path: String) -> Result(Nil, String)
 
-@external(erlang, "Elixir.Vix.Vips.Image", "width")
-pub fn get_width(image: Image) -> Int
+pub fn read(from path: String) -> Result(Image, snag.Snag) {
+  read_ffi(path)
+  |> result.map_error(snag.new)
+  |> snag.context("Failed to read image from file")
+}
 
-@external(erlang, "Elixir.Vix.Vips.Image", "height")
-pub fn get_height(image: Image) -> Int
+@external(erlang, "Elixir.Ansel", "read")
+fn read_ffi(from path: String) -> Result(Image, String)
