@@ -102,3 +102,19 @@ pub fn extract_area_test() {
   |> result.map(ansel.to_bit_array(_, ".png"))
   |> should.equal(Ok(ext))
 }
+
+pub fn get_width_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 2, height: 6, color: color.GleamLucy)
+
+  ansel.get_width(img)
+  |> should.equal(2)
+}
+
+pub fn get_height_test() {
+  let assert Ok(img) =
+    ansel.new_image(width: 6, height: 4, color: color.GleamLucy)
+
+  ansel.get_height(img)
+  |> should.equal(4)
+}

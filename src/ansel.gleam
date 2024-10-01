@@ -113,3 +113,9 @@ pub fn write(img: Image, to path: String) -> Result(Nil, snag.Snag) {
 
 @external(erlang, "Elixir.Ansel", "write_to_file")
 fn write_ffi(img: Image, to path: String) -> Result(Nil, String)
+
+@external(erlang, "Elixir.Vix.Vips.Image", "width")
+pub fn get_width(image: Image) -> Int
+
+@external(erlang, "Elixir.Vix.Vips.Image", "height")
+pub fn get_height(image: Image) -> Int
