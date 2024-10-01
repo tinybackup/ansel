@@ -60,14 +60,9 @@ pub fn extract_area(
   from image: Image,
   at bounding_box: bounding_box.BoundingBox,
 ) -> Result(Image, snag.Snag) {
-  case bounding_box {
-    bounding_box.LTWH(left, top, width, height) ->
-      extract_area_ffi(image, left, top, width, height)
-    bounding_box.LTRB(left, top, right, bottom) ->
-      extract_area_ffi(image, left, top, right - left, bottom - top)
-    bounding_box.X1Y1X2Y2(x1, y1, x2, y2) ->
-      extract_area_ffi(image, x1, y1, x2 - x1, y2 - y1)
-  }
+  let #(left, top, width, height) = bounding_box.to_ltwh_tuple(bounding_box)
+
+  extract_area_ffi(image, left, top, width, height)
   |> result.map_error(snag.new)
   |> snag.context("Failed to extract area from image")
 }
