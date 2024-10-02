@@ -1,4 +1,6 @@
+import gleam/bool
 import gleam/int
+import gleam/option.{None, Some}
 
 pub type FixedBoundingBox {
   LTWH(left: Int, top: Int, width: Int, height: Int)
@@ -80,4 +82,85 @@ pub fn expand(bounding_box: FixedBoundingBox, by amount: Int) {
         y2: y2 + amount,
       )
   }
+}
+
+pub fn cut(
+  out_of to_cut: FixedBoundingBox,
+  with cutter: FixedBoundingBox,
+) -> List(FixedBoundingBox) {
+  let #(cutter_top, cutter_left, cutter_width, cutter_height) =
+    to_ltwh_tuple(cutter)
+
+  let #(to_cut_top, to_cut_left, to_cut_width, to_cut_height) =
+    to_ltwh_tuple(to_cut)
+
+  let overlap = fn(a: #(Int, Int), b: #(Int, Int)) {
+    #(int.max(a.0, b.0), int.min(a.1, b.1))
+  }
+
+  let x_overlap =
+    overlap(#(cutter_top, cutter_top + cutter_width), #(
+      to_cut_top,
+      to_cut_top + to_cut_width,
+    ))
+
+  let y_overlap =
+    overlap(#(cutter_left, cutter_left + cutter_height), #(
+      to_cut_left,
+      to_cut_left + to_cut_height,
+    ))
+
+  use <- bool.guard(
+    when: x_overlap.0 >= x_overlap.1 || y_overlap.0 >= y_overlap.1,
+    return: [to_cut],
+  )
+
+  let cut_pieces = [
+    // Top piece
+    case y_overlap.0 - to_cut_top > 0 {
+      True ->
+        Some(LTWH(
+          left: to_cut_left,
+          top: to_cut_top,
+          width: to_cut_width,
+          height: y_overlap.0 - to_cut_top,
+        ))
+      False -> None
+    },
+    // Left piece
+    case x_overlap.0 - to_cut_left > 0 {
+      True ->
+        Some(LTWH(
+          left: to_cut_left,
+          top: y_overlap.0,
+          width: x_overlap.0 - to_cut_left,
+          height: y_overlap.1 - y_overlap.0,
+        ))
+      False -> None
+    },
+    // Right piece
+    case to_cut_left + to_cut_width - x_overlap.1 > 0 {
+      True ->
+        Some(LTWH(
+          left: x_overlap.1,
+          top: y_overlap.0,
+          width: to_cut_left + to_cut_width - x_overlap.1,
+          height: y_overlap.1 - y_overlap.0,
+        ))
+      False -> None
+    },
+    // Bottom piece
+    case to_cut_top + to_cut_height - y_overlap.1 > 0 {
+      True ->
+        Some(LTWH(
+          left: to_cut_left,
+          top: y_overlap.1,
+          width: to_cut_width,
+          height: to_cut_top + to_cut_height - y_overlap.1,
+        ))
+      False -> None
+    },
+  ]
+
+  option.values(cut_pieces)
 }
