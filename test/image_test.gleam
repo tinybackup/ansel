@@ -212,3 +212,47 @@ pub fn create_thumbnail_test() {
     |> result.replace_error(Nil),
   )
 }
+
+pub fn fit_fixed_bounding_box_width_test() {
+  let assert Ok(img) = image.new_image(width: 6, height: 4, color: color.Blue)
+
+  let assert Ok(fit) =
+    image.fit_fixed_bounding_box(
+      fixed_bounding_box.LTWH(left: 1, top: 2, width: 30, height: 2),
+      in: img,
+    )
+
+  fit
+  |> fixed_bounding_box.to_ltwh_tuple
+  |> should.equal(
+    fixed_bounding_box.LTWH(left: 1, top: 2, width: 5, height: 2)
+    |> fixed_bounding_box.to_ltwh_tuple,
+  )
+}
+
+pub fn fit_fixed_bounding_box_height_test() {
+  let assert Ok(img) = image.new_image(width: 6, height: 4, color: color.Blue)
+
+  let assert Ok(fit) =
+    image.fit_fixed_bounding_box(
+      fixed_bounding_box.LTWH(left: 1, top: 2, width: 2, height: 30),
+      in: img,
+    )
+
+  fit
+  |> fixed_bounding_box.to_ltwh_tuple
+  |> should.equal(
+    fixed_bounding_box.LTWH(left: 1, top: 2, width: 2, height: 2)
+    |> fixed_bounding_box.to_ltwh_tuple,
+  )
+}
+
+pub fn fit_fixed_bounding_box_no_possible_fit_test() {
+  let assert Ok(img) = image.new_image(width: 6, height: 4, color: color.Blue)
+
+  image.fit_fixed_bounding_box(
+    fixed_bounding_box.LTWH(left: 10, top: 22, width: 30, height: 44),
+    in: img,
+  )
+  |> should.equal(Error(Nil))
+}

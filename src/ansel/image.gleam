@@ -40,10 +40,10 @@ pub fn fit_fixed_bounding_box(
     fixed_bounding_box.to_ltrb_tuple(bounding_box)
 
   case left < width, top < height {
-    False, False ->
+    True, True ->
       Ok(fixed_bounding_box.LTRB(
         left: left,
-        top: left,
+        top: top,
         right: int.min(right, width),
         bottom: int.min(bottom, height),
       ))
