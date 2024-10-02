@@ -29,6 +29,28 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
   }
 }
 
+pub fn fit_bounding_box(
+  bounding_box: bounding_box.BoundingBox,
+  in image: ansel.Image,
+) -> Result(bounding_box.BoundingBox, Nil) {
+  let width = get_width(image)
+  let height = get_height(image)
+
+  let #(left, top, right, bottom) = bounding_box.to_ltrb_tuple(bounding_box)
+
+  case left < width, top < height {
+    False, False ->
+      Ok(bounding_box.LTRB(
+        left: left,
+        top: left,
+        right: int.min(right, width),
+        bottom: int.min(bottom, height),
+      ))
+
+    _, _ -> Error(Nil)
+  }
+}
+
 pub fn from_bit_array(bin: BitArray) -> Result(ansel.Image, snag.Snag) {
   from_bit_array_ffi(bin)
   |> result.map_error(snag.new)
