@@ -168,3 +168,18 @@ pub fn read(from path: String) -> Result(Image, snag.Snag) {
 
 @external(erlang, "Elixir.Ansel", "read")
 fn read_ffi(from path: String) -> Result(Image, String)
+
+pub fn create_thumbnail(
+  from path: String,
+  width width: Int,
+) -> Result(Image, snag.Snag) {
+  create_thumbnail_ffi(path, width)
+  |> result.map_error(snag.new)
+  |> snag.context("Failed to create thumbnail from file")
+}
+
+@external(erlang, "Elixir.Vix.Vips.Operation", "thumbnail")
+fn create_thumbnail_ffi(path: String, width: Int) -> Result(Image, String)
+
+pub fn main() {
+}

@@ -198,3 +198,16 @@ pub fn resize_scale_up_test() {
     |> result.map(ansel.to_bit_array(_, ansel.PNG)),
   )
 }
+
+pub fn create_thumbnail_test() {
+  let thumb =
+    ansel.create_thumbnail("test/resources/gleam_composite.png", width: 9)
+    |> result.map(ansel.to_bit_array(_, ansel.JPEG(quality: 70)))
+    |> result.replace_error(Nil)
+
+  thumb
+  |> should.equal(
+    simplifile.read_bits("test/resources/thumb.jpeg")
+    |> result.replace_error(Nil),
+  )
+}
