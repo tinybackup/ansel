@@ -1,4 +1,5 @@
 import ansel/fixed_bounding_box
+import gleam/option.{None, Some}
 import gleeunit
 import gleeunit/should
 
@@ -189,4 +190,30 @@ pub fn resize_by_odd_test() {
   fixed_bounding_box.LTWH(left: 2, top: 2, width: 3, height: 3)
   |> fixed_bounding_box.resize_by(scale: 1.5)
   |> should.equal(fixed_bounding_box.LTRB(left: 3, top: 3, right: 8, bottom: 8))
+}
+
+pub fn intersection_test() {
+  let box1 = fixed_bounding_box.LTRB(left: 2, top: 2, right: 6, bottom: 5)
+  let box2 = fixed_bounding_box.LTRB(left: 4, top: 4, right: 8, bottom: 7)
+
+  fixed_bounding_box.intersection(box1, box2)
+  |> should.equal(
+    Some(fixed_bounding_box.LTRB(left: 4, top: 4, right: 6, bottom: 5)),
+  )
+}
+
+pub fn intersection_none_test() {
+  let box1 = fixed_bounding_box.LTRB(left: 2, top: 2, right: 6, bottom: 5)
+  let box2 = fixed_bounding_box.LTRB(left: 10, top: 10, right: 12, bottom: 11)
+
+  fixed_bounding_box.intersection(box1, box2)
+  |> should.equal(None)
+}
+
+pub fn intersection_completely_within_test() {
+  let box1 = fixed_bounding_box.LTRB(left: 0, top: 0, right: 10, bottom: 10)
+  let box2 = fixed_bounding_box.LTRB(left: 4, top: 4, right: 8, bottom: 7)
+
+  fixed_bounding_box.intersection(box1, box2)
+  |> should.equal(Some(box2))
 }

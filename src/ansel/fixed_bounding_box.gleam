@@ -176,3 +176,31 @@ pub fn cut(
 
   option.values(cut_pieces)
 }
+
+pub fn intersection(
+  of box1: FixedBoundingBox,
+  with box2: FixedBoundingBox,
+) -> option.Option(FixedBoundingBox) {
+  let #(l1, t1, r1, b1) = to_ltrb_tuple(box1)
+  let #(l2, t2, r2, b2) = to_ltrb_tuple(box2)
+
+  use <- bool.guard(
+    when: l1 >= l2 && t1 >= t2 && r1 <= r2 && b1 <= b2,
+    return: Some(box1),
+  )
+
+  use <- bool.guard(
+    when: l1 <= l2 && t1 <= t2 && r1 >= r2 && b1 >= b2,
+    return: Some(box2),
+  )
+
+  let left = int.max(l1, l2)
+  let top = int.max(t1, t2)
+  let right = int.min(r1, r2)
+  let bottom = int.min(b1, b2)
+
+  use <- bool.guard(when: left >= right && top >= bottom, return: None)
+
+  LTRB(left: left, top: top, right: right, bottom: bottom)
+  |> Some
+}
