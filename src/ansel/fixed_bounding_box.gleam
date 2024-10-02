@@ -1,4 +1,5 @@
 import gleam/bool
+import gleam/float
 import gleam/int
 import gleam/option.{None, Some}
 
@@ -82,6 +83,17 @@ pub fn expand(bounding_box: FixedBoundingBox, by amount: Int) {
         y2: y2 + amount,
       )
   }
+}
+
+pub fn resize_by(bounding_box: FixedBoundingBox, scale scale: Float) {
+  let #(left, top, bottom, right) = to_ltrb_tuple(bounding_box)
+
+  LTRB(
+    left: float.round(int.to_float(left) *. scale),
+    top: float.round(int.to_float(top) *. scale),
+    right: float.round(int.to_float(right) *. scale),
+    bottom: float.round(int.to_float(bottom) *. scale),
+  )
 }
 
 pub fn cut(
