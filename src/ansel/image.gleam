@@ -1,5 +1,5 @@
 import ansel
-import ansel/bounding_box
+import ansel/fixed_bounding_box
 import ansel/color
 import gleam/int
 import gleam/result
@@ -29,18 +29,18 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
   }
 }
 
-pub fn fit_bounding_box(
-  bounding_box: bounding_box.BoundingBox,
+pub fn fit_fixed_bounding_box(
+  bounding_box: fixed_bounding_box.FixedBoundingBox,
   in image: ansel.Image,
-) -> Result(bounding_box.BoundingBox, Nil) {
+) -> Result(fixed_bounding_box.FixedBoundingBox, Nil) {
   let width = get_width(image)
   let height = get_height(image)
 
-  let #(left, top, right, bottom) = bounding_box.to_ltrb_tuple(bounding_box)
+  let #(left, top, right, bottom) = fixed_bounding_box.to_ltrb_tuple(bounding_box)
 
   case left < width, top < height {
     False, False ->
-      Ok(bounding_box.LTRB(
+      Ok(fixed_bounding_box.LTRB(
         left: left,
         top: left,
         right: int.min(right, width),
@@ -86,9 +86,9 @@ fn new_image_ffi(
 
 pub fn extract_area(
   from image: ansel.Image,
-  at bounding_box: bounding_box.BoundingBox,
+  at bounding_box: fixed_bounding_box.FixedBoundingBox,
 ) -> Result(ansel.Image, snag.Snag) {
-  let #(left, top, width, height) = bounding_box.to_ltwh_tuple(bounding_box)
+  let #(left, top, width, height) = fixed_bounding_box.to_ltwh_tuple(bounding_box)
 
   extract_area_ffi(image, left, top, width, height)
   |> result.map_error(snag.new)

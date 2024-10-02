@@ -1,6 +1,6 @@
 import ansel
-import ansel/bounding_box
 import ansel/color
+import ansel/fixed_bounding_box
 import ansel/image
 import gleam/result
 import gleeunit
@@ -106,7 +106,7 @@ pub fn extract_area_test() {
 
   image.extract_area(
     comp,
-    at: bounding_box.LTWH(left: 3, top: 3, width: 6, height: 6),
+    at: fixed_bounding_box.LTWH(left: 3, top: 3, width: 6, height: 6),
   )
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(Ok(ext))
