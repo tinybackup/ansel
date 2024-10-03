@@ -170,6 +170,23 @@ pub fn outline(
   )
 }
 
+pub fn border(
+  around image: ansel.Image,
+  with color: color.Color,
+  thickness thickness: Int,
+) {
+  let height = get_height(image)
+  let width = get_width(image)
+
+  let #(_, _, outline_width, outline_height) =
+    fixed_bounding_box.LTWH(left: 0, top: 0, width: width, height: height)
+    |> fixed_bounding_box.expand(by: thickness)
+    |> fixed_bounding_box.to_ltwh_tuple
+
+  new(width: outline_width, height: outline_height, color:)
+  |> result.try(composite_over(_, image, at_left: thickness, at_top: thickness))
+}
+
 @external(erlang, "Elixir.Vix.Vips.Image", "width")
 pub fn get_width(image: ansel.Image) -> Int
 

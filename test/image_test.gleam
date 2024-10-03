@@ -270,3 +270,14 @@ pub fn outline_test() {
     |> result.replace_error(Nil),
   )
 }
+
+pub fn border_test() {
+  image.new(width: 20, height: 20, color: color.SkyBlue)
+  |> result.try(image.border(_, with: color.PaleVioletRed, thickness: 10))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/border.png")
+    |> result.replace_error(Nil),
+  )
+}
