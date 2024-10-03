@@ -1,20 +1,29 @@
 import ansel
 import ansel/color
 import ansel/fixed_bounding_box
+import gleam/bool
 import gleam/int
 import gleam/result
+import gleam/string
 import snag
 
 fn image_format_to_string(format: ansel.ImageFormat) -> String {
   case format {
-    ansel.JPEG(quality) -> ".jpeg[Q=" <> int.to_string(quality) <> "]"
-    ansel.JPEG2000 -> ".jp2"
-    ansel.JPEGXL -> ".jxl"
+    ansel.JPEG(quality:, keep_metadata:) ->
+      ".jpeg" <> format_common_options(quality, keep_metadata)
+    ansel.JPEG2000(quality:, keep_metadata:) ->
+      ".jp2" <> format_common_options(quality, keep_metadata)
+    ansel.JPEGXL(quality:, keep_metadata:) ->
+      ".jxl" <> format_common_options(quality, keep_metadata)
     ansel.PNG -> ".png"
-    ansel.WebP(quality) -> ".webp[Q=" <> int.to_string(quality) <> "]"
-    ansel.AVIF(quality) -> ".avif[Q=" <> int.to_string(quality) <> "]"
-    ansel.TIFF -> ".tiff"
-    ansel.HEIC -> ".heic"
+    ansel.WebP(quality:, keep_metadata:) ->
+      ".webp" <> format_common_options(quality, keep_metadata)
+    ansel.AVIF(quality:, keep_metadata:) ->
+      ".avif" <> format_common_options(quality, keep_metadata)
+    ansel.TIFF(quality:, keep_metadata:) ->
+      ".tiff" <> format_common_options(quality, keep_metadata)
+    ansel.HEIC(quality:, keep_metadata:) ->
+      ".heic" <> format_common_options(quality, keep_metadata)
     ansel.FITS -> ".fits"
     ansel.Matlab -> ".mat"
     ansel.PDF -> ".pdf"
@@ -26,7 +35,16 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
     ansel.Analyze -> ".analyze"
     ansel.NIfTI -> ".nii"
     ansel.DeepZoom -> ".dzi"
+    ansel.Custom(format:) -> format
   }
+}
+
+fn format_common_options(quality, keep_metadata) {
+  "[Q="
+  <> int.to_string(quality)
+  <> ",strip="
+  <> bool.to_string(!keep_metadata) |> string.lowercase
+  <> "]"
 }
 
 pub fn fit_fixed_bounding_box(

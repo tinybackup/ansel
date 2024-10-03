@@ -23,7 +23,10 @@ pub fn new_solid_grey_test() {
     simplifile.read_bits("test/resources/solid_grey_6x6.avif")
 
   image.new(6, 6, color.Grey)
-  |> result.map(image.to_bit_array(_, ansel.AVIF(quality: 100)))
+  |> result.map(image.to_bit_array(_, ansel.AVIF(
+    quality: 100,
+    keep_metadata: True,
+  )))
   |> should.equal(Ok(bin))
 }
 
@@ -32,7 +35,10 @@ pub fn new_nongrey_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.avif")
 
   image.new(6, 6, color.GleamLucy)
-  |> result.map(image.to_bit_array(_, ansel.AVIF(quality: 100)))
+  |> result.map(image.to_bit_array(_, ansel.AVIF(
+    quality: 100,
+    keep_metadata: True,
+  )))
   |> should.equal(Ok(bin))
 }
 
@@ -41,7 +47,10 @@ pub fn bit_array_avif_round_trip_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.avif")
 
   image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, ansel.AVIF(quality: 100)))
+  |> result.map(image.to_bit_array(_, ansel.AVIF(
+    quality: 100,
+    keep_metadata: True,
+  )))
   |> should.equal(Ok(bin))
 }
 
@@ -50,7 +59,10 @@ pub fn bit_array_jpeg_round_trip_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.jpeg")
 
   image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, ansel.JPEG(quality: 100)))
+  |> result.map(image.to_bit_array(_, ansel.JPEG(
+    quality: 100,
+    keep_metadata: True,
+  )))
   |> should.equal(Ok(bin))
 }
 
@@ -67,7 +79,10 @@ pub fn bit_array_webp_round_trip_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.webp")
 
   image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, ansel.WebP(quality: 100)))
+  |> result.map(image.to_bit_array(_, ansel.WebP(
+    quality: 100,
+    keep_metadata: True,
+  )))
   |> should.equal(Ok(bin))
 }
 
@@ -186,7 +201,10 @@ pub fn resize_scale_up_test() {
 pub fn create_thumbnail_test() {
   let thumb =
     image.create_thumbnail("test/resources/gleam_composite.png", width: 9)
-    |> result.map(image.to_bit_array(_, ansel.JPEG(quality: 70)))
+    |> result.map(image.to_bit_array(_, ansel.JPEG(
+      quality: 70,
+      keep_metadata: True,
+    )))
     |> result.replace_error(Nil)
 
   thumb

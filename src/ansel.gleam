@@ -1,12 +1,12 @@
 pub type ImageFormat {
-  JPEG(quality: Int)
-  JPEG2000
-  JPEGXL
+  JPEG(quality: Int, keep_metadata: Bool)
+  JPEG2000(quality: Int, keep_metadata: Bool)
+  JPEGXL(quality: Int, keep_metadata: Bool)
   PNG
-  WebP(quality: Int)
-  AVIF(quality: Int)
-  TIFF
-  HEIC
+  WebP(quality: Int, keep_metadata: Bool)
+  AVIF(quality: Int, keep_metadata: Bool)
+  TIFF(quality: Int, keep_metadata: Bool)
+  HEIC(quality: Int, keep_metadata: Bool)
   FITS
   Matlab
   PDF
@@ -18,6 +18,7 @@ pub type ImageFormat {
   Analyze
   NIfTI
   DeepZoom
+  Custom(format: String)
 }
 
 pub type Image
