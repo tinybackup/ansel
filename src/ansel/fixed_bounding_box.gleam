@@ -86,7 +86,7 @@ pub fn expand(bounding_box: FixedBoundingBox, by amount: Int) {
 }
 
 pub fn resize_by(bounding_box: FixedBoundingBox, scale scale: Float) {
-  let #(left, top, bottom, right) = to_ltrb_tuple(bounding_box)
+  let #(left, top, right, bottom) = to_ltrb_tuple(bounding_box)
 
   LTRB(
     left: float.round(int.to_float(left) *. scale),

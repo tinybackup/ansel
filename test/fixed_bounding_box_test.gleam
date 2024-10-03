@@ -181,15 +181,26 @@ pub fn resize_by_2_test() {
 }
 
 pub fn resize_by_half_test() {
-  fixed_bounding_box.LTWH(left: 0, top: 0, width: 10, height: 10)
+  fixed_bounding_box.LTWH(left: 0, top: 0, width: 20, height: 10)
   |> fixed_bounding_box.resize_by(scale: 0.5)
-  |> should.equal(fixed_bounding_box.LTRB(left: 0, top: 0, right: 5, bottom: 5))
+  |> should.equal(fixed_bounding_box.LTRB(left: 0, top: 0, right: 10, bottom: 5))
 }
 
 pub fn resize_by_odd_test() {
   fixed_bounding_box.LTWH(left: 2, top: 2, width: 3, height: 3)
   |> fixed_bounding_box.resize_by(scale: 1.5)
   |> should.equal(fixed_bounding_box.LTRB(left: 3, top: 3, right: 8, bottom: 8))
+}
+
+pub fn resize_large_downscale_test() {
+  fixed_bounding_box.LTWH(2047, 962, 38, 45)
+  |> fixed_bounding_box.resize_by(scale: 0.33)
+  |> should.equal(fixed_bounding_box.LTRB(
+    left: 676,
+    top: 317,
+    right: 688,
+    bottom: 332,
+  ))
 }
 
 pub fn intersection_test() {
