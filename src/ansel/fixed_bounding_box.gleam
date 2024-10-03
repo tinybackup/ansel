@@ -37,24 +37,24 @@ pub fn shrink(bounding_box: FixedBoundingBox, by amount: Int) {
   case bounding_box {
     LTWH(left, top, width, height) ->
       LTWH(
-        left: left + amount,
-        top: top + amount,
-        width: width - amount * 2,
-        height: height - amount * 2,
+        left: int.max(left + amount, 0),
+        top: int.max(top + amount, 0),
+        width: int.max(width - amount * 2, 0),
+        height: int.max(height - amount * 2, 0),
       )
     LTRB(left, top, right, bottom) ->
       LTRB(
-        left: left + amount,
-        top: top + amount,
-        right: right - amount,
-        bottom: bottom - amount,
+        left: int.max(left + amount, 0),
+        top: int.max(top + amount, 0),
+        right: int.max(right - amount, 0),
+        bottom: int.max(bottom - amount, 0),
       )
     X1Y1X2Y2(x1, y1, x2, y2) ->
       X1Y1X2Y2(
-        x1: x1 + amount,
-        y1: y1 + amount,
-        x2: x2 - amount,
-        y2: y2 - amount,
+        x1: int.max(x1 + amount, 0),
+        y1: int.max(y1 + amount, 0),
+        x2: int.max(x2 - amount, 0),
+        y2: int.max(y2 - amount, 0),
       )
   }
 }
