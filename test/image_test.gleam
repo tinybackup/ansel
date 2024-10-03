@@ -251,3 +251,18 @@ pub fn fit_fixed_bounding_box_no_possible_fit_test() {
   )
   |> should.equal(Error(Nil))
 }
+
+pub fn fill_test() {
+  image.new_image(width: 10, height: 10, color: color.Grey)
+  |> result.try(image.fill(
+    _,
+    in: fixed_bounding_box.LTWH(left: 0, top: 0, width: 5, height: 5),
+    with: color.Blue,
+  ))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/fill.png")
+    |> result.replace_error(Nil),
+  )
+}
