@@ -266,3 +266,19 @@ pub fn fill_test() {
     |> result.replace_error(Nil),
   )
 }
+
+pub fn outline_test() {
+  image.new_image(width: 20, height: 20, color: color.GleamLucy)
+  |> result.try(image.outline(
+    _,
+    area: fixed_bounding_box.LTWH(left: 2, top: 3, width: 10, height: 10),
+    with: color.GleamNavy,
+    thickness: 2,
+  ))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/outline.png")
+    |> result.replace_error(Nil),
+  )
+}

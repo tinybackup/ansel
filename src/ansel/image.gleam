@@ -29,6 +29,17 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
   }
 }
 
+pub fn main() {
+  new_image(width: 20, height: 20, color: color.GleamLucy)
+  |> result.try(outline(
+    _,
+    area: fixed_bounding_box.LTWH(left: 2, top: 3, width: 10, height: 10),
+    with: color.GleamNavy,
+    thickness: 2,
+  ))
+  |> result.try(write(_, "out", ansel.PNG))
+}
+
 pub fn fit_fixed_bounding_box(
   bounding_box: fixed_bounding_box.FixedBoundingBox,
   in image: ansel.Image,
@@ -135,6 +146,39 @@ pub fn fill(
 
   new_image(width:, height:, color:)
   |> result.try(composite_over(image, _, at_left: left, at_top: top))
+}
+
+pub fn outline(
+  image: ansel.Image,
+  area bounding_box: fixed_bounding_box.FixedBoundingBox,
+  with color: color.Color,
+  thickness thickness: Int,
+) {
+  let #(left, top, width, height) =
+    fixed_bounding_box.to_ltwh_tuple(bounding_box)
+
+  let original_bb = bounding_box |> fixed_bounding_box.shrink(by: thickness)
+
+  let #(original_left, original_top, _, _) =
+    fixed_bounding_box.to_ltwh_tuple(original_bb)
+
+  use original_area <- result.try(extract_area(image, at: original_bb))
+
+  use outline <- result.try(new_image(width:, height:, color:))
+
+  use filled <- result.try(composite_over(
+    image,
+    outline,
+    at_left: left,
+    at_top: top,
+  ))
+
+  composite_over(
+    filled,
+    with: original_area,
+    at_left: original_left,
+    at_top: original_top,
+  )
 }
 
 @external(erlang, "Elixir.Vix.Vips.Image", "width")
