@@ -236,7 +236,7 @@ pub fn intersection(
   let right = int.min(r1, r2)
   let bottom = int.min(b1, b2)
 
-  use <- bool.guard(when: left >= right && top >= bottom, return: None)
+  use <- bool.guard(when: left >= right || top >= bottom, return: None)
 
   LTRB(left: left, top: top, right: right, bottom: bottom)
   |> Some

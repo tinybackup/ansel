@@ -198,6 +198,22 @@ pub fn intersection_test() {
   |> should.equal(Some(assert_ltrb(left: 4, top: 4, right: 6, bottom: 5)))
 }
 
+pub fn intersetion_too_right_test() {
+  let box1 = assert_ltwh(left: 0, top: 0, width: 600, height: 450)
+  let box2 = assert_ltwh(702, 283, 67, 244)
+  
+  fixed_bounding_box.intersection(box1, box2)
+  |> should.equal(None)
+}
+
+pub fn intersection_too_down_test() {
+  let box1 = assert_ltwh(left: 0, top: 0, width: 600, height: 450)
+  let box2 = assert_ltwh(0, 500, 600, 451)
+
+  fixed_bounding_box.intersection(box1, box2)
+  |> should.equal(None)
+}
+
 pub fn intersection_none_test() {
   let box1 = assert_ltrb(left: 2, top: 2, right: 6, bottom: 5)
   let box2 = assert_ltrb(left: 10, top: 10, right: 12, bottom: 11)
