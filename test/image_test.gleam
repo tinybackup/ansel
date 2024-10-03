@@ -11,6 +11,12 @@ pub fn main() {
   gleeunit.main()
 }
 
+fn assert_ltwh(left l: Int, top t: Int, width w: Int, height h: Int) {
+  let assert Ok(value) =
+    fixed_bounding_box.ltwh(left: l, top: t, width: w, height: h)
+  value
+}
+
 pub fn read_test() {
   let assert Ok(img) = image.read("test/resources/gleam_lucy_6x6.avif")
 
@@ -112,7 +118,7 @@ pub fn extract_area_test() {
 
   image.extract_area(
     comp,
-    at: fixed_bounding_box.LTWH(left: 3, top: 3, width: 6, height: 6),
+    at: assert_ltwh(left: 3, top: 3, width: 6, height: 6),
   )
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(Ok(ext))
@@ -219,14 +225,14 @@ pub fn fit_fixed_bounding_box_width_test() {
 
   let assert Ok(fit) =
     image.fit_fixed_bounding_box(
-      fixed_bounding_box.LTWH(left: 1, top: 2, width: 30, height: 2),
+      assert_ltwh(left: 1, top: 2, width: 30, height: 2),
       in: img,
     )
 
   fit
   |> fixed_bounding_box.to_ltwh_tuple
   |> should.equal(
-    fixed_bounding_box.LTWH(left: 1, top: 2, width: 5, height: 2)
+    assert_ltwh(left: 1, top: 2, width: 5, height: 2)
     |> fixed_bounding_box.to_ltwh_tuple,
   )
 }
@@ -236,14 +242,14 @@ pub fn fit_fixed_bounding_box_height_test() {
 
   let assert Ok(fit) =
     image.fit_fixed_bounding_box(
-      fixed_bounding_box.LTWH(left: 1, top: 2, width: 2, height: 30),
+      assert_ltwh(left: 1, top: 2, width: 2, height: 30),
       in: img,
     )
 
   fit
   |> fixed_bounding_box.to_ltwh_tuple
   |> should.equal(
-    fixed_bounding_box.LTWH(left: 1, top: 2, width: 2, height: 2)
+    assert_ltwh(left: 1, top: 2, width: 2, height: 2)
     |> fixed_bounding_box.to_ltwh_tuple,
   )
 }
@@ -252,17 +258,17 @@ pub fn fit_fixed_bounding_box_no_possible_fit_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.Blue)
 
   image.fit_fixed_bounding_box(
-    fixed_bounding_box.LTWH(left: 10, top: 22, width: 30, height: 44),
+    assert_ltwh(left: 10, top: 22, width: 30, height: 44),
     in: img,
   )
-  |> should.equal(Error(Nil))
+  |> should.be_error
 }
 
 pub fn fill_test() {
   image.new(width: 10, height: 10, color: color.Grey)
   |> result.try(image.fill(
     _,
-    in: fixed_bounding_box.LTWH(left: 0, top: 0, width: 5, height: 5),
+    in: assert_ltwh(left: 0, top: 0, width: 5, height: 5),
     with: color.Blue,
   ))
   |> result.map(image.to_bit_array(_, ansel.PNG))
@@ -277,7 +283,7 @@ pub fn outline_test() {
   image.new(width: 20, height: 20, color: color.GleamLucy)
   |> result.try(image.outline(
     _,
-    area: fixed_bounding_box.LTWH(left: 2, top: 3, width: 10, height: 10),
+    area: assert_ltwh(left: 2, top: 3, width: 10, height: 10),
     with: color.GleamNavy,
     thickness: 2,
   ))

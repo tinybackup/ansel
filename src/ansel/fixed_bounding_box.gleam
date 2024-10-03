@@ -2,11 +2,48 @@ import gleam/bool
 import gleam/float
 import gleam/int
 import gleam/option.{None, Some}
+import snag
 
-pub type FixedBoundingBox {
+pub opaque type FixedBoundingBox {
   LTWH(left: Int, top: Int, width: Int, height: Int)
   LTRB(left: Int, top: Int, right: Int, bottom: Int)
   X1Y1X2Y2(x1: Int, y1: Int, x2: Int, y2: Int)
+}
+
+pub fn ltwh(
+  left left: Int,
+  top top: Int,
+  width width: Int,
+  height height: Int,
+) -> Result(FixedBoundingBox, snag.Snag) {
+  case width > 0 && height > 0 && left >= 0 && top >= 0 {
+    True -> Ok(LTWH(left: left, top: top, width: width, height: height))
+    False -> snag.error("Impossible ltwh bounding box values passed")
+  }
+}
+
+pub fn ltrb(
+  left left: Int,
+  top top: Int,
+  right right: Int,
+  bottom bottom: Int,
+) -> Result(FixedBoundingBox, snag.Snag) {
+  case left < right && top < bottom && left >= 0 && top >= 0 {
+    True -> Ok(LTRB(left: left, top: top, right: right, bottom: bottom))
+    False -> snag.error("Impossible ltrb bounding box values passed")
+  }
+}
+
+pub fn x1y1x2y2(
+  x1 x1: Int,
+  y1 y1: Int,
+  x2 x2: Int,
+  y2 y2: Int,
+) -> Result(FixedBoundingBox, snag.Snag) {
+  case x1 < x2 && y1 < y2 && x1 >= 0 && y1 >= 0 {
+    True -> Ok(X1Y1X2Y2(x1: x1, y1: y1, x2: x2, y2: y2))
+    False -> snag.error("Impossible x1y1x2y2 bounding box values passed")
+  }
 }
 
 pub fn to_ltwh_tuple(bounding_box: FixedBoundingBox) {

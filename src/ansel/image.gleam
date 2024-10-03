@@ -50,7 +50,7 @@ fn format_common_options(quality, keep_metadata) {
 pub fn fit_fixed_bounding_box(
   bounding_box: fixed_bounding_box.FixedBoundingBox,
   in image: ansel.Image,
-) -> Result(fixed_bounding_box.FixedBoundingBox, Nil) {
+) -> Result(fixed_bounding_box.FixedBoundingBox, snag.Snag) {
   let width = get_width(image)
   let height = get_height(image)
 
@@ -59,14 +59,15 @@ pub fn fit_fixed_bounding_box(
 
   case left < width, top < height {
     True, True ->
-      Ok(fixed_bounding_box.LTRB(
+      fixed_bounding_box.ltrb(
         left: left,
         top: top,
         right: int.min(right, width),
         bottom: int.min(bottom, height),
-      ))
+      )
 
-    _, _ -> Error(Nil)
+    _, _ ->
+      snag.error("Passed bounding box is completely outside the image to fit")
   }
 }
 
@@ -196,10 +197,11 @@ pub fn border(
   let height = get_height(image)
   let width = get_width(image)
 
-  let #(_, _, outline_width, outline_height) =
-    fixed_bounding_box.LTWH(left: 0, top: 0, width: width, height: height)
-    |> fixed_bounding_box.expand(by: thickness)
-    |> fixed_bounding_box.to_ltwh_tuple
+  use #(_, _, outline_width, outline_height) <- result.try(
+    fixed_bounding_box.ltwh(left: 0, top: 0, width: width, height: height)
+    |> result.map(fixed_bounding_box.expand(_, by: thickness))
+    |> result.map(fixed_bounding_box.to_ltwh_tuple),
+  )
 
   new(width: outline_width, height: outline_height, color:)
   |> result.try(composite_over(_, image, at_left: thickness, at_top: thickness))
