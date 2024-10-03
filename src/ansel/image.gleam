@@ -3,6 +3,7 @@ import ansel/color
 import ansel/fixed_bounding_box
 import gleam/bool
 import gleam/int
+import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
 import snag
@@ -167,11 +168,6 @@ pub fn outline(
 
   let original_bb = bounding_box |> fixed_bounding_box.shrink(by: thickness)
 
-  let #(original_left, original_top, _, _) =
-    fixed_bounding_box.to_ltwh_tuple(original_bb)
-
-  use original_area <- result.try(extract_area(image, at: original_bb))
-
   use outline <- result.try(new(width:, height:, color:))
 
   use filled <- result.try(composite_over(
@@ -181,12 +177,23 @@ pub fn outline(
     at_top: top,
   ))
 
-  composite_over(
-    filled,
-    with: original_area,
-    at_left: original_left,
-    at_top: original_top,
-  )
+  case original_bb {
+    Some(original_bb) -> {
+      let #(original_left, original_top, _, _) =
+        fixed_bounding_box.to_ltwh_tuple(original_bb)
+
+      use original_area <- result.try(extract_area(image, at: original_bb))
+
+      composite_over(
+        filled,
+        with: original_area,
+        at_left: original_left,
+        at_top: original_top,
+      )
+    }
+
+    None -> Ok(filled)
+  }
 }
 
 pub fn border(

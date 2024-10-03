@@ -70,33 +70,48 @@ pub fn to_x1y1x2y2_tuple(bounding_box: FixedBoundingBox) {
   }
 }
 
-pub fn shrink(bounding_box: FixedBoundingBox, by amount: Int) {
+pub fn shrink(
+  bounding_box: FixedBoundingBox,
+  by amount: Int,
+) -> option.Option(FixedBoundingBox) {
+  use <- bool.guard(when: amount < 0, return: Some(bounding_box))
+
+  let #(_, _, width, height) = to_ltwh_tuple(bounding_box)
+
+  use <- bool.guard(
+    when: amount * 2 >= width || amount * 2 >= height,
+    return: None,
+  )
+
   case bounding_box {
     LTWH(left, top, width, height) ->
       LTWH(
-        left: int.max(left + amount, 0),
-        top: int.max(top + amount, 0),
+        left: left + amount,
+        top: top + amount,
         width: int.max(width - amount * 2, 0),
         height: int.max(height - amount * 2, 0),
       )
     LTRB(left, top, right, bottom) ->
       LTRB(
-        left: int.max(left + amount, 0),
-        top: int.max(top + amount, 0),
+        left: left + amount,
+        top: top + amount,
         right: int.max(right - amount, 0),
         bottom: int.max(bottom - amount, 0),
       )
     X1Y1X2Y2(x1, y1, x2, y2) ->
       X1Y1X2Y2(
-        x1: int.max(x1 + amount, 0),
-        y1: int.max(y1 + amount, 0),
+        x1: x1 + amount,
+        y1: y1 + amount,
         x2: int.max(x2 - amount, 0),
         y2: int.max(y2 - amount, 0),
       )
   }
+  |> Some
 }
 
 pub fn expand(bounding_box: FixedBoundingBox, by amount: Int) {
+  use <- bool.guard(when: amount < 0, return: bounding_box)
+
   case bounding_box {
     LTWH(left, top, width, height) ->
       LTWH(
