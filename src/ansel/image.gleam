@@ -29,17 +29,6 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
   }
 }
 
-pub fn main() {
-  new_image(width: 20, height: 20, color: color.GleamLucy)
-  |> result.try(outline(
-    _,
-    area: fixed_bounding_box.LTWH(left: 2, top: 3, width: 10, height: 10),
-    with: color.GleamNavy,
-    thickness: 2,
-  ))
-  |> result.try(write(_, "out", ansel.PNG))
-}
-
 pub fn fit_fixed_bounding_box(
   bounding_box: fixed_bounding_box.FixedBoundingBox,
   in image: ansel.Image,
@@ -79,7 +68,7 @@ pub fn to_bit_array(img: ansel.Image, format: ansel.ImageFormat) -> BitArray {
 @external(erlang, "Elixir.Ansel", "to_bit_array")
 fn to_bit_array_ffi(img: ansel.Image, format: String) -> BitArray
 
-pub fn new_image(
+pub fn new(
   width width: Int,
   height height: Int,
   color color: color.Color,
@@ -144,7 +133,7 @@ pub fn fill(
   let #(left, top, width, height) =
     fixed_bounding_box.to_ltwh_tuple(bounding_box)
 
-  new_image(width:, height:, color:)
+  new(width:, height:, color:)
   |> result.try(composite_over(image, _, at_left: left, at_top: top))
 }
 
@@ -164,7 +153,7 @@ pub fn outline(
 
   use original_area <- result.try(extract_area(image, at: original_bb))
 
-  use outline <- result.try(new_image(width:, height:, color:))
+  use outline <- result.try(new(width:, height:, color:))
 
   use filled <- result.try(composite_over(
     image,
