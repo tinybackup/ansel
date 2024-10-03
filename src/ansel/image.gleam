@@ -109,8 +109,8 @@ fn extract_area_ffi(
 pub fn composite_over(
   base: ansel.Image,
   with overlay: ansel.Image,
-  at_left_position l: Int,
-  at_top_position t: Int,
+  at_left l: Int,
+  at_top t: Int,
 ) -> Result(ansel.Image, snag.Snag) {
   composite_over_ffi(base, overlay, l, t)
   |> result.map_error(snag.new)
@@ -124,6 +124,18 @@ fn composite_over_ffi(
   x: Int,
   y: Int,
 ) -> Result(ansel.Image, String)
+
+pub fn fill(
+  image: ansel.Image,
+  in bounding_box: fixed_bounding_box.FixedBoundingBox,
+  with color: color.Color,
+) {
+  let #(left, top, width, height) =
+    fixed_bounding_box.to_ltwh_tuple(bounding_box)
+
+  new_image(width:, height:, color:)
+  |> result.try(composite_over(image, _, at_left: left, at_top: top))
+}
 
 @external(erlang, "Elixir.Vix.Vips.Image", "width")
 pub fn get_width(image: ansel.Image) -> Int

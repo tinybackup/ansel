@@ -81,7 +81,7 @@ pub fn composite_over_test() {
   let assert Ok(new) =
     image.new_image(width: 6, height: 6, color: color.GleamNavy)
 
-  image.composite_over(base, with: new, at_left_position: 1, at_top_position: 1)
+  image.composite_over(base, with: new, at_left: 1, at_top: 1)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(Ok(bin))
 }
@@ -97,12 +97,7 @@ pub fn extract_area_test() {
     image.new_image(width: 6, height: 6, color: color.GleamNavy)
 
   let assert Ok(comp) =
-    image.composite_over(
-      base,
-      with: new,
-      at_left_position: 1,
-      at_top_position: 1,
-    )
+    image.composite_over(base, with: new, at_left: 1, at_top: 1)
 
   image.extract_area(
     comp,
