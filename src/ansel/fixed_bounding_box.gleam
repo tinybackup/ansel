@@ -152,75 +152,55 @@ pub fn cut(
   out_of to_cut: FixedBoundingBox,
   with cutter: FixedBoundingBox,
 ) -> List(FixedBoundingBox) {
-  let #(cutter_top, cutter_left, cutter_width, cutter_height) =
-    to_ltwh_tuple(cutter)
+  let #(x1, y1, w1, h1) = to_ltwh_tuple(to_cut)
+  let #(x2, y2, w2, h2) = to_ltwh_tuple(cutter)
 
-  let #(to_cut_top, to_cut_left, to_cut_width, to_cut_height) =
-    to_ltwh_tuple(to_cut)
-
-  let overlap = fn(a: #(Int, Int), b: #(Int, Int)) {
-    #(int.max(a.0, b.0), int.min(a.1, b.1))
-  }
-
-  let x_overlap =
-    overlap(#(cutter_top, cutter_top + cutter_width), #(
-      to_cut_top,
-      to_cut_top + to_cut_width,
-    ))
-
-  let y_overlap =
-    overlap(#(cutter_left, cutter_left + cutter_height), #(
-      to_cut_left,
-      to_cut_left + to_cut_height,
-    ))
+  let int_left = int.max(x1, x2)
+  let int_top = int.max(y1, y2)
+  let int_right = int.min(x1 + w1, x2 + w2)
+  let int_bottom = int.min(y1 + h1, y2 + h2)
 
   use <- bool.guard(
-    when: x_overlap.0 >= x_overlap.1 || y_overlap.0 >= y_overlap.1,
+    when: int_left >= int_right || int_top >= int_bottom,
     return: [to_cut],
   )
 
   let cut_pieces = [
     // Top piece
-    case y_overlap.0 - to_cut_top > 0 {
-      True ->
-        Some(LTWH(
-          left: to_cut_left,
-          top: to_cut_top,
-          width: to_cut_width,
-          height: y_overlap.0 - to_cut_top,
-        ))
+    case y1 < int_top {
+      True -> Some(LTWH(left: x1, top: y1, width: w1, height: int_top - y1))
       False -> None
     },
     // Left piece
-    case x_overlap.0 - to_cut_left > 0 {
+    case x1 < int_left {
       True ->
         Some(LTWH(
-          left: to_cut_left,
-          top: y_overlap.0,
-          width: x_overlap.0 - to_cut_left,
-          height: y_overlap.1 - y_overlap.0,
+          left: x1,
+          top: int_top,
+          width: int_left - x1,
+          height: int_bottom - int_top,
         ))
       False -> None
     },
     // Right piece
-    case to_cut_left + to_cut_width - x_overlap.1 > 0 {
+    case int_right < x1 + w1 {
       True ->
         Some(LTWH(
-          left: x_overlap.1,
-          top: y_overlap.0,
-          width: to_cut_left + to_cut_width - x_overlap.1,
-          height: y_overlap.1 - y_overlap.0,
+          left: int_right,
+          top: int_top,
+          width: x1 + w1 - int_right,
+          height: int_bottom - int_top,
         ))
       False -> None
     },
     // Bottom piece
-    case to_cut_top + to_cut_height - y_overlap.1 > 0 {
+    case int_bottom < y1 + h1 {
       True ->
         Some(LTWH(
-          left: to_cut_left,
-          top: y_overlap.1,
-          width: to_cut_width,
-          height: to_cut_top + to_cut_height - y_overlap.1,
+          left: x1,
+          top: int_bottom,
+          width: w1,
+          height: y1 + h1 - int_bottom,
         ))
       False -> None
     },

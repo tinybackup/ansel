@@ -1,4 +1,5 @@
 import ansel/fixed_bounding_box
+import gleam/list
 import gleam/option.{None, Some}
 import gleeunit
 import gleeunit/should
@@ -176,6 +177,24 @@ pub fn cut_right_bottom_borders_test() {
     assert_ltwh(left: 0, top: 0, width: 10, height: 6),
     assert_ltwh(left: 0, top: 6, width: 7, height: 4),
   ])
+}
+
+pub fn cut_top_bottom_border_test() {
+  let to_cut = assert_ltrb(297, 283, 783, 527)
+  let cutter = assert_ltrb(377, 223, 702, 587)
+
+  fixed_bounding_box.cut(to_cut, cutter)
+  |> list.map(fixed_bounding_box.to_ltrb_tuple)
+  |> should.equal([#(297, 283, 377, 527), #(702, 283, 783, 527)])
+}
+
+pub fn cut_right_left_border_test() {
+  let to_cut = assert_ltrb(377, 223, 702, 587)
+  let cutter = assert_ltrb(297, 283, 783, 527)
+
+  fixed_bounding_box.cut(to_cut, cutter)
+  |> list.map(fixed_bounding_box.to_ltrb_tuple)
+  |> should.equal([#(377, 223, 702, 283), #(377, 527, 702, 587)])
 }
 
 pub fn cut_center_test() {
