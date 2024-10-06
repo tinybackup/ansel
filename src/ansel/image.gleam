@@ -220,6 +220,17 @@ pub fn get_width(image: ansel.Image) -> Int
 @external(erlang, "Elixir.Vix.Vips.Image", "height")
 pub fn get_height(image: ansel.Image) -> Int
 
+pub fn to_fixed_bounding_box(
+  image: ansel.Image,
+) -> fixed_bounding_box.FixedBoundingBox {
+  fixed_bounding_box.unchecked_ltwh(
+    left: 0,
+    top: 0,
+    width: get_width(image),
+    height: get_height(image),
+  )
+}
+
 pub fn resize_width_to(
   img: ansel.Image,
   resolution width: Int,

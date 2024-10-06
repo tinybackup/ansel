@@ -22,6 +22,16 @@ pub fn ltwh(
   }
 }
 
+@internal
+pub fn unchecked_ltwh(
+  left left: Int,
+  top top: Int,
+  width width: Int,
+  height height: Int,
+) -> FixedBoundingBox {
+  LTWH(left: left, top: top, width: width, height: height)
+}
+
 pub fn ltrb(
   left left: Int,
   top top: Int,
@@ -235,4 +245,40 @@ pub fn intersection(
 
   LTRB(left: left, top: top, right: right, bottom: bottom)
   |> Some
+}
+
+pub fn fit(
+  box1: FixedBoundingBox,
+  into box2: FixedBoundingBox,
+) -> option.Option(FixedBoundingBox) {
+  let #(_, _, width, height) = to_ltwh_tuple(box2)
+
+  let #(left, top, right, bottom) = to_ltrb_tuple(box1)
+
+  case left < width, top < height {
+    True, True ->
+      Some(LTRB(
+        left: left,
+        top: top,
+        right: int.min(right, width),
+        bottom: int.min(bottom, height),
+      ))
+
+    _, _ -> None
+  }
+}
+
+pub fn make_relative_to(
+  bounding_box: FixedBoundingBox,
+  reference reference: FixedBoundingBox,
+) -> FixedBoundingBox {
+  let #(left, top, right, bottom) = to_ltrb_tuple(bounding_box)
+  let #(ref_left, ref_top, _, _) = to_ltwh_tuple(reference)
+
+  LTRB(
+    left: left - ref_left,
+    top: top - ref_top,
+    right: right - ref_left,
+    bottom: bottom - ref_top,
+  )
 }
