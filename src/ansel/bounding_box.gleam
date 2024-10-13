@@ -4,7 +4,7 @@ import gleam/int
 import gleam/option.{None, Some}
 import snag
 
-pub opaque type FixedBoundingBox {
+pub opaque type BoundingBox {
   LTWH(left: Int, top: Int, width: Int, height: Int)
   LTRB(left: Int, top: Int, right: Int, bottom: Int)
   X1Y1X2Y2(x1: Int, y1: Int, x2: Int, y2: Int)
@@ -15,7 +15,7 @@ pub fn ltwh(
   top top: Int,
   width width: Int,
   height height: Int,
-) -> Result(FixedBoundingBox, snag.Snag) {
+) -> Result(BoundingBox, snag.Snag) {
   case width > 0 && height > 0 && left >= 0 && top >= 0 {
     True -> Ok(LTWH(left: left, top: top, width: width, height: height))
     False -> snag.error("Impossible ltwh bounding box values passed")
@@ -28,7 +28,7 @@ pub fn unchecked_ltwh(
   top top: Int,
   width width: Int,
   height height: Int,
-) -> FixedBoundingBox {
+) -> BoundingBox {
   LTWH(left: left, top: top, width: width, height: height)
 }
 
@@ -37,7 +37,7 @@ pub fn ltrb(
   top top: Int,
   right right: Int,
   bottom bottom: Int,
-) -> Result(FixedBoundingBox, snag.Snag) {
+) -> Result(BoundingBox, snag.Snag) {
   case left < right && top < bottom && left >= 0 && top >= 0 {
     True -> Ok(LTRB(left: left, top: top, right: right, bottom: bottom))
     False -> snag.error("Impossible ltrb bounding box values passed")
@@ -49,14 +49,14 @@ pub fn x1y1x2y2(
   y1 y1: Int,
   x2 x2: Int,
   y2 y2: Int,
-) -> Result(FixedBoundingBox, snag.Snag) {
+) -> Result(BoundingBox, snag.Snag) {
   case x1 < x2 && y1 < y2 && x1 >= 0 && y1 >= 0 {
     True -> Ok(X1Y1X2Y2(x1: x1, y1: y1, x2: x2, y2: y2))
     False -> snag.error("Impossible x1y1x2y2 bounding box values passed")
   }
 }
 
-pub fn to_ltwh_tuple(bounding_box: FixedBoundingBox) {
+pub fn to_ltwh_tuple(bounding_box: BoundingBox) {
   case bounding_box {
     LTWH(left, top, width, height) -> #(left, top, width, height)
     LTRB(left, top, right, bottom) -> #(left, top, right - left, bottom - top)
@@ -64,7 +64,7 @@ pub fn to_ltwh_tuple(bounding_box: FixedBoundingBox) {
   }
 }
 
-pub fn to_ltrb_tuple(bounding_box: FixedBoundingBox) {
+pub fn to_ltrb_tuple(bounding_box: BoundingBox) {
   case bounding_box {
     LTWH(left, top, width, height) -> #(left, top, left + width, top + height)
     LTRB(left, top, right, bottom) -> #(left, top, right, bottom)
@@ -72,7 +72,7 @@ pub fn to_ltrb_tuple(bounding_box: FixedBoundingBox) {
   }
 }
 
-pub fn to_x1y1x2y2_tuple(bounding_box: FixedBoundingBox) {
+pub fn to_x1y1x2y2_tuple(bounding_box: BoundingBox) {
   case bounding_box {
     LTWH(left, top, width, height) -> #(left, top, left + width, top + height)
     LTRB(left, top, right, bottom) -> #(left, top, right, bottom)
@@ -81,9 +81,9 @@ pub fn to_x1y1x2y2_tuple(bounding_box: FixedBoundingBox) {
 }
 
 pub fn shrink(
-  bounding_box: FixedBoundingBox,
+  bounding_box: BoundingBox,
   by amount: Int,
-) -> option.Option(FixedBoundingBox) {
+) -> option.Option(BoundingBox) {
   use <- bool.guard(when: amount < 0, return: Some(bounding_box))
 
   let #(_, _, width, height) = to_ltwh_tuple(bounding_box)
@@ -119,7 +119,7 @@ pub fn shrink(
   |> Some
 }
 
-pub fn expand(bounding_box: FixedBoundingBox, by amount: Int) {
+pub fn expand(bounding_box: BoundingBox, by amount: Int) {
   use <- bool.guard(when: amount < 0, return: bounding_box)
 
   case bounding_box {
@@ -147,7 +147,7 @@ pub fn expand(bounding_box: FixedBoundingBox, by amount: Int) {
   }
 }
 
-pub fn resize_by(bounding_box: FixedBoundingBox, scale scale: Float) {
+pub fn resize_by(bounding_box: BoundingBox, scale scale: Float) {
   let #(left, top, right, bottom) = to_ltrb_tuple(bounding_box)
 
   LTRB(
@@ -159,9 +159,9 @@ pub fn resize_by(bounding_box: FixedBoundingBox, scale scale: Float) {
 }
 
 pub fn cut(
-  out_of to_cut: FixedBoundingBox,
-  with cutter: FixedBoundingBox,
-) -> List(FixedBoundingBox) {
+  out_of to_cut: BoundingBox,
+  with cutter: BoundingBox,
+) -> List(BoundingBox) {
   let #(x1, y1, w1, h1) = to_ltwh_tuple(to_cut)
   let #(x2, y2, w2, h2) = to_ltwh_tuple(cutter)
 
@@ -220,9 +220,9 @@ pub fn cut(
 }
 
 pub fn intersection(
-  of box1: FixedBoundingBox,
-  with box2: FixedBoundingBox,
-) -> option.Option(FixedBoundingBox) {
+  of box1: BoundingBox,
+  with box2: BoundingBox,
+) -> option.Option(BoundingBox) {
   let #(l1, t1, r1, b1) = to_ltrb_tuple(box1)
   let #(l2, t2, r2, b2) = to_ltrb_tuple(box2)
 
@@ -248,9 +248,9 @@ pub fn intersection(
 }
 
 pub fn fit(
-  box1: FixedBoundingBox,
-  into box2: FixedBoundingBox,
-) -> option.Option(FixedBoundingBox) {
+  box1: BoundingBox,
+  into box2: BoundingBox,
+) -> option.Option(BoundingBox) {
   let #(_, _, width, height) = to_ltwh_tuple(box2)
 
   let #(left, top, right, bottom) = to_ltrb_tuple(box1)
@@ -269,9 +269,9 @@ pub fn fit(
 }
 
 pub fn make_relative_to(
-  bounding_box: FixedBoundingBox,
-  reference reference: FixedBoundingBox,
-) -> FixedBoundingBox {
+  bounding_box: BoundingBox,
+  reference reference: BoundingBox,
+) -> BoundingBox {
   let #(left, top, right, bottom) = to_ltrb_tuple(bounding_box)
   let #(ref_left, ref_top, _, _) = to_ltwh_tuple(reference)
 

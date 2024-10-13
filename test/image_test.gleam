@@ -1,6 +1,6 @@
 import ansel
+import ansel/bounding_box
 import ansel/color
-import ansel/fixed_bounding_box
 import ansel/image
 import gleam/result
 import gleeunit
@@ -12,8 +12,7 @@ pub fn main() {
 }
 
 fn assert_ltwh(left l: Int, top t: Int, width w: Int, height h: Int) {
-  let assert Ok(value) =
-    fixed_bounding_box.ltwh(left: l, top: t, width: w, height: h)
+  let assert Ok(value) = bounding_box.ltwh(left: l, top: t, width: w, height: h)
   value
 }
 
@@ -220,44 +219,44 @@ pub fn create_thumbnail_test() {
   )
 }
 
-pub fn fit_fixed_bounding_box_width_test() {
+pub fn fit_bounding_box_width_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.Blue)
 
   let assert Ok(fit) =
-    image.fit_fixed_bounding_box(
+    image.fit_bounding_box(
       assert_ltwh(left: 1, top: 2, width: 30, height: 2),
       in: img,
     )
 
   fit
-  |> fixed_bounding_box.to_ltwh_tuple
+  |> bounding_box.to_ltwh_tuple
   |> should.equal(
     assert_ltwh(left: 1, top: 2, width: 5, height: 2)
-    |> fixed_bounding_box.to_ltwh_tuple,
+    |> bounding_box.to_ltwh_tuple,
   )
 }
 
-pub fn fit_fixed_bounding_box_height_test() {
+pub fn fit_bounding_box_height_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.Blue)
 
   let assert Ok(fit) =
-    image.fit_fixed_bounding_box(
+    image.fit_bounding_box(
       assert_ltwh(left: 1, top: 2, width: 2, height: 30),
       in: img,
     )
 
   fit
-  |> fixed_bounding_box.to_ltwh_tuple
+  |> bounding_box.to_ltwh_tuple
   |> should.equal(
     assert_ltwh(left: 1, top: 2, width: 2, height: 2)
-    |> fixed_bounding_box.to_ltwh_tuple,
+    |> bounding_box.to_ltwh_tuple,
   )
 }
 
-pub fn fit_fixed_bounding_box_no_possible_fit_test() {
+pub fn fit_bounding_box_no_possible_fit_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.Blue)
 
-  image.fit_fixed_bounding_box(
+  image.fit_bounding_box(
     assert_ltwh(left: 10, top: 22, width: 30, height: 44),
     in: img,
   )

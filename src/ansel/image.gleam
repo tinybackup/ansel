@@ -1,6 +1,6 @@
 import ansel
+import ansel/bounding_box
 import ansel/color
-import ansel/fixed_bounding_box
 import gleam/bool
 import gleam/int
 import gleam/option.{None, Some}
@@ -48,19 +48,29 @@ fn format_common_options(quality, keep_metadata) {
   <> "]"
 }
 
-pub fn fit_fixed_bounding_box(
-  bounding_box: fixed_bounding_box.FixedBoundingBox,
+/// Fits a fixed bounding box to an image.
+/// 
+/// ## Example
+/// 
+/// ```gleam
+/// let assert Ok(bb) = bounding_box.ltwh(4, 2, 40, 30)
+/// let assert Ok(img) = image.new(6, 7, color.GleamLucy)
+/// image.fit_bounding_box(bb, in: img)
+/// |> bounding_box.to_ltwh_tuple
+/// // -> #(4, 2, 2, 5)
+/// ```
+pub fn fit_bounding_box(
+  bounding_box: bounding_box.BoundingBox,
   in image: ansel.Image,
-) -> Result(fixed_bounding_box.FixedBoundingBox, snag.Snag) {
+) -> Result(bounding_box.BoundingBox, snag.Snag) {
   let width = get_width(image)
   let height = get_height(image)
 
-  let #(left, top, right, bottom) =
-    fixed_bounding_box.to_ltrb_tuple(bounding_box)
+  let #(left, top, right, bottom) = bounding_box.to_ltrb_tuple(bounding_box)
 
   case left < width, top < height {
     True, True ->
-      fixed_bounding_box.ltrb(
+      bounding_box.ltrb(
         left: left,
         top: top,
         right: int.min(right, width),
@@ -72,6 +82,14 @@ pub fn fit_fixed_bounding_box(
   }
 }
 
+/// Reads a vips image from a bit array, assuming it is in a valid image.
+/// 
+/// ## Example
+/// ```gleam
+/// simplifile.read_bits("input.jpeg")
+/// |> result.try(image.from_bit_array)
+/// // -> Ok(ansel.Image)
+/// ```
 pub fn from_bit_array(bin: BitArray) -> Result(ansel.Image, snag.Snag) {
   from_bit_array_ffi(bin)
   |> result.map_error(snag.new)
@@ -81,6 +99,15 @@ pub fn from_bit_array(bin: BitArray) -> Result(ansel.Image, snag.Snag) {
 @external(erlang, "Elixir.Vix.Vips.Image", "new_from_buffer")
 fn from_bit_array_ffi(bin: BitArray) -> Result(ansel.Image, String)
 
+/// Saves a vips image to a bit array. Assumes your vips was built with the
+/// correct encoder support for the format to save in.
+/// 
+/// ## Example
+/// ```gleam
+/// image.new(6, 6, color.GleamLucy)
+/// |> result.map(to_bit_array(_, ansel.PNG))
+/// |> result.try(simplifile.write_bits("output.png"))
+/// ```
 pub fn to_bit_array(img: ansel.Image, format: ansel.ImageFormat) -> BitArray {
   to_bit_array_ffi(img, image_format_to_string(format))
 }
@@ -88,6 +115,13 @@ pub fn to_bit_array(img: ansel.Image, format: ansel.ImageFormat) -> BitArray {
 @external(erlang, "Elixir.Ansel", "to_bit_array")
 fn to_bit_array_ffi(img: ansel.Image, format: String) -> BitArray
 
+/// Creates a new image with the specified width, height, and color
+/// 
+/// ## Example
+/// ```gleam
+/// image.new(6, 6, color.Olive)
+/// // -> Ok(ansel.Image)
+/// ```
 pub fn new(
   width width: Int,
   height height: Int,
@@ -105,12 +139,14 @@ fn new_image_ffi(
   color: List(Int),
 ) -> Result(ansel.Image, String)
 
+/// Extracts an area out of an image, resulting in a new image of the 
+/// extracted area.
+/// 
 pub fn extract_area(
   from image: ansel.Image,
-  at bounding_box: fixed_bounding_box.FixedBoundingBox,
+  at bounding_box: bounding_box.BoundingBox,
 ) -> Result(ansel.Image, snag.Snag) {
-  let #(left, top, width, height) =
-    fixed_bounding_box.to_ltwh_tuple(bounding_box)
+  let #(left, top, width, height) = bounding_box.to_ltwh_tuple(bounding_box)
 
   extract_area_ffi(image, left, top, width, height)
   |> result.map_error(snag.new)
@@ -147,11 +183,10 @@ fn composite_over_ffi(
 
 pub fn fill(
   image: ansel.Image,
-  in bounding_box: fixed_bounding_box.FixedBoundingBox,
+  in bounding_box: bounding_box.BoundingBox,
   with color: color.Color,
 ) {
-  let #(left, top, width, height) =
-    fixed_bounding_box.to_ltwh_tuple(bounding_box)
+  let #(left, top, width, height) = bounding_box.to_ltwh_tuple(bounding_box)
 
   new(width:, height:, color:)
   |> result.try(composite_over(image, _, at_left: left, at_top: top))
@@ -159,14 +194,13 @@ pub fn fill(
 
 pub fn outline(
   image: ansel.Image,
-  area bounding_box: fixed_bounding_box.FixedBoundingBox,
+  area bounding_box: bounding_box.BoundingBox,
   with color: color.Color,
   thickness thickness: Int,
 ) {
-  let #(left, top, width, height) =
-    fixed_bounding_box.to_ltwh_tuple(bounding_box)
+  let #(left, top, width, height) = bounding_box.to_ltwh_tuple(bounding_box)
 
-  let original_bb = bounding_box |> fixed_bounding_box.shrink(by: thickness)
+  let original_bb = bounding_box |> bounding_box.shrink(by: thickness)
 
   use outline <- result.try(new(width:, height:, color:))
 
@@ -180,7 +214,7 @@ pub fn outline(
   case original_bb {
     Some(original_bb) -> {
       let #(original_left, original_top, _, _) =
-        fixed_bounding_box.to_ltwh_tuple(original_bb)
+        bounding_box.to_ltwh_tuple(original_bb)
 
       use original_area <- result.try(extract_area(image, at: original_bb))
 
@@ -205,9 +239,9 @@ pub fn border(
   let width = get_width(image)
 
   use #(_, _, outline_width, outline_height) <- result.try(
-    fixed_bounding_box.ltwh(left: 0, top: 0, width: width, height: height)
-    |> result.map(fixed_bounding_box.expand(_, by: thickness))
-    |> result.map(fixed_bounding_box.to_ltwh_tuple),
+    bounding_box.ltwh(left: 0, top: 0, width: width, height: height)
+    |> result.map(bounding_box.expand(_, by: thickness))
+    |> result.map(bounding_box.to_ltwh_tuple),
   )
 
   new(width: outline_width, height: outline_height, color:)
@@ -220,10 +254,8 @@ pub fn get_width(image: ansel.Image) -> Int
 @external(erlang, "Elixir.Vix.Vips.Image", "height")
 pub fn get_height(image: ansel.Image) -> Int
 
-pub fn to_fixed_bounding_box(
-  image: ansel.Image,
-) -> fixed_bounding_box.FixedBoundingBox {
-  fixed_bounding_box.unchecked_ltwh(
+pub fn to_bounding_box(image: ansel.Image) -> bounding_box.BoundingBox {
+  bounding_box.unchecked_ltwh(
     left: 0,
     top: 0,
     width: get_width(image),
