@@ -35,35 +35,66 @@ import gleam/result
 import gleam/string
 import snag
 
-fn image_format_to_string(format: ansel.ImageFormat) -> String {
+/// Image formats supported by vips. All may not be supported by the default
+/// vips binary included with this package, you may need to provide your
+/// own vips binary on the host system to. See the package readme for details.
+/// 
+/// The `Custom` constructor allows for advanced vips save options to be 
+/// used, like `ansel.Custom(".png[compression=90,squash=true]"), refer to the 
+/// [Vix package documentation](https://hexdocs.pm/vix/Vix.Vips.Image.html#write_to_file/2) 
+/// for details.
+pub type ImageFormat {
+  JPEG(quality: Int, keep_metadata: Bool)
+  JPEG2000(quality: Int, keep_metadata: Bool)
+  JPEGXL(quality: Int, keep_metadata: Bool)
+  PNG
+  WebP(quality: Int, keep_metadata: Bool)
+  AVIF(quality: Int, keep_metadata: Bool)
+  TIFF(quality: Int, keep_metadata: Bool)
+  HEIC(quality: Int, keep_metadata: Bool)
+  FITS
+  Matlab
+  PDF
+  SVG
+  HDR
+  PPM
+  CSV
+  GIF
+  Analyze
+  NIfTI
+  DeepZoom
+  Custom(format: String)
+}
+
+fn image_format_to_string(format: ImageFormat) -> String {
   case format {
-    ansel.JPEG(quality:, keep_metadata:) ->
+    JPEG(quality:, keep_metadata:) ->
       ".jpeg" <> format_common_options(quality, keep_metadata)
-    ansel.JPEG2000(quality:, keep_metadata:) ->
+    JPEG2000(quality:, keep_metadata:) ->
       ".jp2" <> format_common_options(quality, keep_metadata)
-    ansel.JPEGXL(quality:, keep_metadata:) ->
+    JPEGXL(quality:, keep_metadata:) ->
       ".jxl" <> format_common_options(quality, keep_metadata)
-    ansel.PNG -> ".png"
-    ansel.WebP(quality:, keep_metadata:) ->
+    PNG -> ".png"
+    WebP(quality:, keep_metadata:) ->
       ".webp" <> format_common_options(quality, keep_metadata)
-    ansel.AVIF(quality:, keep_metadata:) ->
+    AVIF(quality:, keep_metadata:) ->
       ".avif" <> format_common_options(quality, keep_metadata)
-    ansel.TIFF(quality:, keep_metadata:) ->
+    TIFF(quality:, keep_metadata:) ->
       ".tiff" <> format_common_options(quality, keep_metadata)
-    ansel.HEIC(quality:, keep_metadata:) ->
+    HEIC(quality:, keep_metadata:) ->
       ".heic" <> format_common_options(quality, keep_metadata)
-    ansel.FITS -> ".fits"
-    ansel.Matlab -> ".mat"
-    ansel.PDF -> ".pdf"
-    ansel.SVG -> ".svg"
-    ansel.HDR -> ".hdr"
-    ansel.PPM -> ".ppm"
-    ansel.CSV -> ".csv"
-    ansel.GIF -> ".gif"
-    ansel.Analyze -> ".analyze"
-    ansel.NIfTI -> ".nii"
-    ansel.DeepZoom -> ".dzi"
-    ansel.Custom(format:) -> format
+    FITS -> ".fits"
+    Matlab -> ".mat"
+    PDF -> ".pdf"
+    SVG -> ".svg"
+    HDR -> ".hdr"
+    PPM -> ".ppm"
+    CSV -> ".csv"
+    GIF -> ".gif"
+    Analyze -> ".analyze"
+    NIfTI -> ".nii"
+    DeepZoom -> ".dzi"
+    Custom(format:) -> format
   }
 }
 
@@ -135,7 +166,7 @@ fn from_bit_array_ffi(bin: BitArray) -> Result(ansel.Image, String)
 /// |> result.map(to_bit_array(_, ansel.PNG))
 /// |> result.try(simplifile.write_bits("output.png"))
 /// ```
-pub fn to_bit_array(img: ansel.Image, format: ansel.ImageFormat) -> BitArray {
+pub fn to_bit_array(img: ansel.Image, format: ImageFormat) -> BitArray {
   to_bit_array_ffi(img, image_format_to_string(format))
 }
 
@@ -395,7 +426,7 @@ fn resize_ffi(img: ansel.Image, scale: Float) -> Result(ansel.Image, String)
 pub fn write(
   image img: ansel.Image,
   to path: String,
-  in format: ansel.ImageFormat,
+  in format: ImageFormat,
 ) -> Result(Nil, snag.Snag) {
   write_ffi(img, path <> image_format_to_string(format))
   |> result.map_error(snag.new)

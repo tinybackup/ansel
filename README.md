@@ -9,7 +9,6 @@ This library uses the [snag package](https://hexdocs.pm/snag/index.html) for err
 
 The great vips library is used as the image processing backend, via the fantastic Elixir Vix package. Elixir must be installed to compile this package. The pre-compiled vips binary that comes with Vix supports the most common image formats, but a custom built vips binary can be provided to support even more. See more details about this below.
 
-
 ```sh
 gleam add ansel
 ```
@@ -17,8 +16,8 @@ gleam add ansel
 ## Resizing Images
 
 ```gleam
-import ansel
 import ansel/image
+import ansel/color
 import gleam/result
 import snag
 
@@ -29,7 +28,7 @@ pub fn main() {
   |> result.try(image.border(_, with: color.GleamLucy, thickness: 6))
   |> result.try(image.scale_width(_, to: 600))
   |> result.try(
-    image.write(_, "output", ansel.JPEG(quality: 60, keep_metadata: False)),
+    image.write(_, "output", image.JPEG(quality: 60, keep_metadata: False)),
   )
   |> snag.context("Failed processing input.jpeg")
 }
@@ -40,7 +39,6 @@ pub fn main() {
 ## Extracting From and Layering Images
 
 ```gleam
-import ansel
 import ansel/image
 import ansel/bounding_box
 import gleam/result
@@ -56,9 +54,7 @@ pub fn main() {
   |> result.try(
     image.composite_over(base: img2, with: _, at_left: 400, at_top: 300),
   )
-  |> result.try(
-    image.write(_, "output", ansel.PNG),
-  )
+  |> result.try(image.write(_, "output", image.PNG))
   |> snag.context("Failed processing inputs")
 }
 // -> output.png written to disk with a 500x500 pixel area from input1 layered
