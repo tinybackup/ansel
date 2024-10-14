@@ -23,6 +23,7 @@ defmodule Ansel do
   end
 
   def new_image(width, height, background) do
+    # This is a 1x1 PNG file bit array
     png =
       <<137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8,
         2, 0, 0, 0, 144, 119, 83, 222, 0, 0, 0, 9, 112, 72, 89, 115, 0, 0, 3, 232, 0, 0, 3, 232,

@@ -19,7 +19,7 @@ fn assert_ltrb(left l: Int, top t: Int, right r: Int, bottom b: Int) {
 }
 
 pub fn shrink_by_one_test() {
-  let assert Some(box) =
+  let assert Ok(box) =
     assert_ltwh(left: 1, top: 2, width: 3, height: 4)
     |> bounding_box.shrink(by: 1)
 
@@ -29,7 +29,7 @@ pub fn shrink_by_one_test() {
 }
 
 pub fn shrink_big_test() {
-  let assert Some(box) =
+  let assert Ok(box) =
     assert_ltwh(left: 10, top: 20, width: 300, height: 900)
     |> bounding_box.shrink(by: 50)
 
@@ -41,13 +41,13 @@ pub fn shrink_big_test() {
 pub fn over_shrink_test() {
   assert_ltwh(left: 0, top: 0, width: 11, height: 11)
   |> bounding_box.shrink(by: 100)
-  |> should.equal(option.None)
+  |> should.equal(Error(Nil))
 }
 
 pub fn negative_shrink_test() {
   assert_ltwh(left: 0, top: 0, width: 11, height: 11)
   |> bounding_box.shrink(by: -100)
-  |> should.equal(Some(assert_ltwh(left: 0, top: 0, width: 11, height: 11)))
+  |> should.equal(Ok(assert_ltwh(left: 0, top: 0, width: 11, height: 11)))
 }
 
 pub fn expand_by_one_test() {
@@ -211,25 +211,25 @@ pub fn cut_center_test() {
 
 pub fn resize_by_2_test() {
   assert_ltwh(left: 0, top: 0, width: 10, height: 10)
-  |> bounding_box.resize_by(scale: 2.0)
+  |> bounding_box.scale(by: 2.0)
   |> should.equal(assert_ltrb(left: 0, top: 0, right: 20, bottom: 20))
 }
 
 pub fn resize_by_half_test() {
   assert_ltwh(left: 0, top: 0, width: 20, height: 10)
-  |> bounding_box.resize_by(scale: 0.5)
+  |> bounding_box.scale(by: 0.5)
   |> should.equal(assert_ltrb(left: 0, top: 0, right: 10, bottom: 5))
 }
 
 pub fn resize_by_odd_test() {
   assert_ltwh(left: 2, top: 2, width: 3, height: 3)
-  |> bounding_box.resize_by(scale: 1.5)
+  |> bounding_box.scale(by: 1.5)
   |> should.equal(assert_ltrb(left: 3, top: 3, right: 8, bottom: 8))
 }
 
 pub fn resize_large_downscale_test() {
   assert_ltwh(2047, 962, 38, 45)
-  |> bounding_box.resize_by(scale: 0.33)
+  |> bounding_box.scale(by: 0.33)
   |> should.equal(assert_ltrb(left: 676, top: 317, right: 688, bottom: 332))
 }
 
@@ -271,4 +271,24 @@ pub fn intersection_completely_within_test() {
 
   bounding_box.intersection(box1, box2)
   |> should.equal(Some(box2))
+}
+
+pub fn make_relative_test() {
+  let box = assert_ltwh(left: 2, top: 2, width: 4, height: 4)
+  let ref = assert_ltwh(left: 4, top: 4, width: 6, height: 6)
+
+  bounding_box.make_relative(box, to: ref)
+  |> should.equal(Some(assert_ltrb(left: 0, top: 0, right: 2, bottom: 2)))
+
+  let box = assert_ltwh(left: 2, top: 2, width: 4, height: 4)
+  let ref = assert_ltwh(left: 20, top: 20, width: 6, height: 6)
+
+  bounding_box.make_relative(box, to: ref)
+  |> should.equal(None)
+
+  let box = assert_ltwh(left: 20, top: 20, width: 4, height: 4)
+  let ref = assert_ltwh(left: 2, top: 2, width: 6, height: 6)
+
+  bounding_box.make_relative(box, to: ref)
+  |> should.equal(None)
 }

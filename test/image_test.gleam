@@ -140,7 +140,7 @@ pub fn get_height_test() {
 pub fn resize_width_down_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamLucy)
 
-  image.resize_width_to(img, resolution: 3)
+  image.scale_width(img, to: 3)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(
     image.new(width: 3, height: 2, color: color.GleamLucy)
@@ -151,7 +151,7 @@ pub fn resize_width_down_test() {
 pub fn resize_width_up_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamLucy)
 
-  image.resize_width_to(img, resolution: 12)
+  image.scale_width(img, to: 12)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(
     image.new(width: 12, height: 8, color: color.GleamLucy)
@@ -162,7 +162,7 @@ pub fn resize_width_up_test() {
 pub fn resize_height_down_test() {
   let assert Ok(img) = image.new(width: 6, height: 8, color: color.GleamLucy)
 
-  image.resize_height_to(img, resolution: 4)
+  image.scale_height(img, to: 4)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(
     image.new(width: 3, height: 4, color: color.GleamLucy)
@@ -173,7 +173,7 @@ pub fn resize_height_down_test() {
 pub fn resize_height_up_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamNavy)
 
-  image.resize_height_to(img, resolution: 12)
+  image.scale_height(img, to: 12)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(
     image.new(width: 18, height: 12, color: color.GleamNavy)
@@ -184,7 +184,7 @@ pub fn resize_height_up_test() {
 pub fn resize_scale_down_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamLucy)
 
-  image.resize_by(img, scale: 0.5)
+  image.scale(img, by: 0.5)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(
     image.new(width: 3, height: 2, color: color.GleamLucy)
@@ -195,7 +195,7 @@ pub fn resize_scale_down_test() {
 pub fn resize_scale_up_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamNavy)
 
-  image.resize_by(img, scale: 3.0)
+  image.scale(img, by: 3.0)
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> should.equal(
     image.new(width: 18, height: 12, color: color.GleamNavy)

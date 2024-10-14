@@ -1,15 +1,29 @@
+//// A module for working with bounding boxes in Ansel. Bounding boxes are a 
+//// common way to represent rectangular areas in images, and can be used to 
+//// crop images, fill in images, and highlight areas of images.
+//// 
+//// ```gleam
+//// let assert Ok(box) = bounding_box.x1y1x2y2(2, 2, 4, 4)
+//// 
+//// bounding_box.expand(box, by: 2)
+//// |> image.extract_area(image, at: _)
+//// ```
+
 import gleam/bool
 import gleam/float
 import gleam/int
 import gleam/option.{None, Some}
 import snag
 
+/// A representation of a rectangular area in any given image.
 pub opaque type BoundingBox {
   LTWH(left: Int, top: Int, width: Int, height: Int)
   LTRB(left: Int, top: Int, right: Int, bottom: Int)
   X1Y1X2Y2(x1: Int, y1: Int, x2: Int, y2: Int)
 }
 
+/// Creates a new bounding box from the given values in the (Left, Top), (Width, 
+/// Height) rectangular coordinate format.
 pub fn ltwh(
   left left: Int,
   top top: Int,
@@ -32,6 +46,8 @@ pub fn unchecked_ltwh(
   LTWH(left: left, top: top, width: width, height: height)
 }
 
+/// Creates a new bounding box from the given values in the (Left, Top), (Right, 
+/// Bottom) rectangular coordinate format.
 pub fn ltrb(
   left left: Int,
   top top: Int,
@@ -44,6 +60,8 @@ pub fn ltrb(
   }
 }
 
+/// Creates a new bounding box from the given values in the (x1, y1), (x2, y2) 
+/// rectangular coordinate format.
 pub fn x1y1x2y2(
   x1 x1: Int,
   y1 y1: Int,
@@ -56,6 +74,22 @@ pub fn x1y1x2y2(
   }
 }
 
+/// Converts a bounding box to a tuple with the coordinate values left, top, 
+/// width, height. Useful for working with with custom bounding box operations
+/// and getting the width and height of a bounding box.
+/// 
+/// ## Example
+/// ```gleam
+/// let assert Ok(box) = bounding_box.x1y1x2y2(x1: 2, y1: 2, x2: 6, y2: 6) 
+/// bounding_box.to_ltwh_tuple(box)
+/// // -> #(2, 2, 4, 4)
+/// ```
+/// 
+/// ```gleam
+/// let assert Ok(box) = bounding_box.x1y1x2y2(x1: 4, y1: 4, x2: 10, y2: 10) 
+/// let #(_, _, width, height) = bounding_box.to_ltwh_tuple(box)
+/// // -> 6, 6
+/// ```
 pub fn to_ltwh_tuple(bounding_box: BoundingBox) {
   case bounding_box {
     LTWH(left, top, width, height) -> #(left, top, width, height)
@@ -64,6 +98,15 @@ pub fn to_ltwh_tuple(bounding_box: BoundingBox) {
   }
 }
 
+/// Converts a bounding box to a tuple with the coordinate values left, top, 
+/// right, bottom. Useful for working with with custom bounding box operations.
+/// 
+/// ## Example
+/// ```gleam
+/// let assert Ok(box) = bounding_box.x1y1x2y2(x1: 2, y1: 2, x2: 6, y2: 6) 
+/// bounding_box.to_ltrb_tuple(box)
+/// // -> #(2, 2, 6, 6)
+/// ```
 pub fn to_ltrb_tuple(bounding_box: BoundingBox) {
   case bounding_box {
     LTWH(left, top, width, height) -> #(left, top, left + width, top + height)
@@ -72,6 +115,15 @@ pub fn to_ltrb_tuple(bounding_box: BoundingBox) {
   }
 }
 
+/// Converts a bounding box to a tuple with the coordinate values x1, y1, x2, 
+/// y2. Useful for working with with custom bounding box operations.
+/// 
+/// ## Example
+/// ```gleam
+/// let assert Ok(box) = bounding_box.ltwh(2, 2, 4, 4) 
+/// bounding_box.to_x1y1x2y2_tuple(box)
+/// // -> #(2, 2, 6, 6)
+/// ```
 pub fn to_x1y1x2y2_tuple(bounding_box: BoundingBox) {
   case bounding_box {
     LTWH(left, top, width, height) -> #(left, top, left + width, top + height)
@@ -80,17 +132,20 @@ pub fn to_x1y1x2y2_tuple(bounding_box: BoundingBox) {
   }
 }
 
+/// Shrinks a bounding box by the given amount in all dimensions. If the amount 
+/// is negative, the bounding box will not be modified. If the amount to shrink 
+/// is greater than the size of the bounding box, an error will be returned.
 pub fn shrink(
   bounding_box: BoundingBox,
   by amount: Int,
-) -> option.Option(BoundingBox) {
-  use <- bool.guard(when: amount < 0, return: Some(bounding_box))
+) -> Result(BoundingBox, Nil) {
+  use <- bool.guard(when: amount < 0, return: Ok(bounding_box))
 
   let #(_, _, width, height) = to_ltwh_tuple(bounding_box)
 
   use <- bool.guard(
     when: amount * 2 >= width || amount * 2 >= height,
-    return: None,
+    return: Error(Nil),
   )
 
   case bounding_box {
@@ -116,9 +171,11 @@ pub fn shrink(
         y2: int.max(y2 - amount, 0),
       )
   }
-  |> Some
+  |> Ok
 }
 
+/// Expands a bounding box by the given amount in all dimensions. If the amount 
+/// is negative, the bounding box will not be modified.
 pub fn expand(bounding_box: BoundingBox, by amount: Int) {
   use <- bool.guard(when: amount < 0, return: bounding_box)
 
@@ -147,7 +204,8 @@ pub fn expand(bounding_box: BoundingBox, by amount: Int) {
   }
 }
 
-pub fn resize_by(bounding_box: BoundingBox, scale scale: Float) {
+/// Resizes a bounding box by the given scale.
+pub fn scale(bounding_box: BoundingBox, by scale: Float) {
   let #(left, top, right, bottom) = to_ltrb_tuple(bounding_box)
 
   LTRB(
@@ -158,6 +216,8 @@ pub fn resize_by(bounding_box: BoundingBox, scale scale: Float) {
   )
 }
 
+/// Cuts a bounding box out of another bounding box, returning a list of 
+/// bounding boxes that represent the area of the original that was not cut out.
 pub fn cut(
   out_of to_cut: BoundingBox,
   with cutter: BoundingBox,
@@ -219,6 +279,8 @@ pub fn cut(
   option.values(cut_pieces)
 }
 
+/// Returns the intersection of two bounding boxes. If they do not intersect,
+/// `None` will be returned.
 pub fn intersection(
   of box1: BoundingBox,
   with box2: BoundingBox,
@@ -247,13 +309,15 @@ pub fn intersection(
   |> Some
 }
 
+/// Fits a bounding box into another bounding box, dropping any pixels outside 
+/// the dimensions of the reference bounding box.
 pub fn fit(
-  box1: BoundingBox,
-  into box2: BoundingBox,
+  box: BoundingBox,
+  into reference: BoundingBox,
 ) -> option.Option(BoundingBox) {
-  let #(_, _, width, height) = to_ltwh_tuple(box2)
+  let #(_, _, width, height) = to_ltwh_tuple(reference)
 
-  let #(left, top, right, bottom) = to_ltrb_tuple(box1)
+  let #(left, top, right, bottom) = to_ltrb_tuple(box)
 
   case left < width, top < height {
     True, True ->
@@ -268,17 +332,43 @@ pub fn fit(
   }
 }
 
-pub fn make_relative_to(
-  bounding_box: BoundingBox,
-  reference reference: BoundingBox,
-) -> BoundingBox {
-  let #(left, top, right, bottom) = to_ltrb_tuple(bounding_box)
+/// Makes a bounding box relative to and fit inside another bounding box. 
+/// Assuming both bounding boxes are on the same image, they are both relative
+/// to 0,0 on that image. This adjusts the first bounding box so that the 
+/// original coordinates are relative to the top left corner of the second 
+/// bounding box instead, and then fits the adjusted bounding box into the 
+/// reference bounding box.
+/// 
+/// This is useful when you have two bounding boxes on an image, where one
+/// represents an extracted area of the original image and you want to do
+/// an operation on that extracted area with the second bounding box, but the 
+/// second bounding box was calculated with the coordinates of the original 
+/// image.
+/// 
+/// ## Example
+/// ```gleam
+/// let assert Ok(box) = bounding_box.ltwh(left: 2, top: 2, width: 4, height: 4) 
+/// let assert Ok(ref) = bounding_box.ltwh(left: 4, top: 4, width: 6, height: 6) 
+/// bounding_box.make_relative(box, to: ref)
+/// // -> Some(bounding_box.ltwh(left: 0, top: 0, width: 2, height: 2))
+/// ```
+pub fn make_relative(
+  box: BoundingBox,
+  to reference: BoundingBox,
+) -> option.Option(BoundingBox) {
+  let #(left, top, right, bottom) = to_ltrb_tuple(box)
   let #(ref_left, ref_top, _, _) = to_ltwh_tuple(reference)
 
-  LTRB(
-    left: left - ref_left,
-    top: top - ref_top,
-    right: right - ref_left,
-    bottom: bottom - ref_top,
-  )
+  let adj_box =
+    LTRB(
+      left: int.max(left - ref_left, 0),
+      top: int.max(top - ref_top, 0),
+      right: int.max(right - ref_left, 0),
+      bottom: int.max(bottom - ref_top, 0),
+    )
+
+  case adj_box {
+    LTRB(0, 0, 0, 0) -> None
+    _ -> fit(adj_box, into: reference)
+  }
 }

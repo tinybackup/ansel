@@ -1,9 +1,36 @@
+//// This module is primarily a wrapper around the Elixir package Vix, which
+//// is a wrapper around the great image processing library vips. A pre-built
+//// vips binary comes with Vix, but see the readme for more information on
+//// how to bring your own to support more image formats.
+//// 
+//// This module uses the [snag package](https://hexdocs.pm/snag/index.html) for 
+//// error handling because vix errors just come back as strings and are not 
+//// enumerated. Make sure to install it as well to work with the error messages.
+//// 
+//// ```gleam
+//// import ansel
+//// import ansel/image
+//// import gleam/result
+//// import snag
+////
+//// pub fn main() {
+////   let assert Ok(img) = image.read("input.jpeg")
+////
+////   image.scale(img, by: 2.0)
+////   |> result.try(
+////     image.write(_, "output", ansel.JPEG(quality: 60, keep_metadata: False)),
+////   )
+////   |> snag.context("Unable to process my cool image")
+//// }
+//// // -> output.jpeg written to disk as a smaller, rounded, bordered version of the
+//// //    original image
+//// ```
+
 import ansel
 import ansel/bounding_box
 import ansel/color
 import gleam/bool
 import gleam/int
-import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
 import snag
@@ -60,7 +87,7 @@ fn format_common_options(quality, keep_metadata) {
 /// // -> bounding_box.ltwh(left: 4, top: 2, width: 2, height: 5)
 /// ```
 pub fn fit_bounding_box(
-  bounding_box: bounding_box.BoundingBox,
+  bounding_box bounding_box: bounding_box.BoundingBox,
   in image: ansel.Image,
 ) -> Result(bounding_box.BoundingBox, snag.Snag) {
   let width = get_width(image)
@@ -82,7 +109,7 @@ pub fn fit_bounding_box(
   }
 }
 
-/// Reads a vips image from a bit array, assuming it is in a valid image.
+/// Reads a vips image from a bit array
 /// 
 /// ## Example
 /// ```gleam
@@ -141,7 +168,6 @@ fn new_image_ffi(
 
 /// Extracts an area out of an image, resulting in a new image of the 
 /// extracted area.
-/// 
 pub fn extract_area(
   from image: ansel.Image,
   at bounding_box: bounding_box.BoundingBox,
@@ -162,8 +188,10 @@ fn extract_area_ffi(
   h: Int,
 ) -> Result(ansel.Image, String)
 
+/// Places an image over another image, with the top left corner of the
+/// overlay image placed at the specified coordinates.
 pub fn composite_over(
-  base: ansel.Image,
+  base base: ansel.Image,
   with overlay: ansel.Image,
   at_left l: Int,
   at_top t: Int,
@@ -181,6 +209,7 @@ fn composite_over_ffi(
   y: Int,
 ) -> Result(ansel.Image, String)
 
+/// Fills in an area of the passed image with a solid color. 
 pub fn fill(
   image: ansel.Image,
   in bounding_box: bounding_box.BoundingBox,
@@ -192,8 +221,10 @@ pub fn fill(
   |> result.try(composite_over(image, _, at_left: left, at_top: top))
 }
 
+/// Outlines an area in the passed image with a solid color. All
+/// outline pixels are written inside the bounding box area.
 pub fn outline(
-  image: ansel.Image,
+  in image: ansel.Image,
   area bounding_box: bounding_box.BoundingBox,
   with color: color.Color,
   thickness thickness: Int,
@@ -212,7 +243,7 @@ pub fn outline(
   ))
 
   case original_bb {
-    Some(original_bb) -> {
+    Ok(original_bb) -> {
       let #(original_left, original_top, _, _) =
         bounding_box.to_ltwh_tuple(original_bb)
 
@@ -226,10 +257,14 @@ pub fn outline(
       )
     }
 
-    None -> Ok(filled)
+    Error(Nil) -> Ok(filled)
   }
 }
 
+/// Add a solid border around the passed image, expanding the 
+/// dimensions of the image by the border thickness. Replaces any transparent
+/// pixels with the color of the border. This can be used with the round
+/// function to add a rounded border to an image.
 pub fn border(
   around image: ansel.Image,
   with color: color.Color,
@@ -248,9 +283,9 @@ pub fn border(
   |> result.try(composite_over(_, image, at_left: thickness, at_top: thickness))
 }
 
-/// Applies a gaussian blur to an image.
+/// Applies a gaussian blur with the given sigma value to an image.
 pub fn blur(
-  image: ansel.Image,
+  image image: ansel.Image,
   with sigma: Float,
 ) -> Result(ansel.Image, snag.Snag) {
   gaussblur_ffi(image, sigma)
@@ -261,8 +296,9 @@ pub fn blur(
 @external(erlang, "Elixir.Vix.Vips.Operation", "gaussblur")
 fn gaussblur_ffi(img: ansel.Image, sigma: Float) -> Result(ansel.Image, String)
 
+/// Rotates an image by the given number of degrees.
 pub fn rotate(
-  image: ansel.Image,
+  image image: ansel.Image,
   by degrees: Float,
 ) -> Result(ansel.Image, snag.Snag) {
   // Rotating by an exact degree of 90, 180, or 270 is a special operation
@@ -290,9 +326,13 @@ fn rotate180_ffi(img: ansel.Image) -> Result(ansel.Image, String)
 @external(erlang, "Elixir.Ansel", "rotate270")
 fn rotate270_ffi(img: ansel.Image) -> Result(ansel.Image, String)
 
-/// Implmentation heavily inspired by the great Image elixir library.
+/// Rounds the corners of an image by a given radius, leaving transparent 
+/// pixels where the rounding was applied. A large radius can be given to 
+/// create circular images. This can be used with the border function to 
+/// create rounded borders around images. This implmentation is heavily 
+/// inspired by the extensive elixir library Image.
 pub fn round(
-  image: ansel.Image,
+  image image: ansel.Image,
   by radius: Float,
 ) -> Result(ansel.Image, snag.Snag) {
   round_ffi(image, radius)
@@ -303,13 +343,17 @@ pub fn round(
 @external(erlang, "Elixir.Ansel", "round")
 fn round_ffi(img: ansel.Image, radius: Float) -> Result(ansel.Image, String)
 
+/// Returns the width of an image.
 @external(erlang, "Elixir.Vix.Vips.Image", "width")
 pub fn get_width(image: ansel.Image) -> Int
 
+/// Returns the height of an image.
 @external(erlang, "Elixir.Vix.Vips.Image", "height")
 pub fn get_height(image: ansel.Image) -> Int
 
-pub fn to_bounding_box(image: ansel.Image) -> bounding_box.BoundingBox {
+/// Returns the dimensions of an image as a bounding box. Useful for bounding
+/// box operations.
+pub fn to_bounding_box(image image: ansel.Image) -> bounding_box.BoundingBox {
   bounding_box.unchecked_ltwh(
     left: 0,
     top: 0,
@@ -318,23 +362,26 @@ pub fn to_bounding_box(image: ansel.Image) -> bounding_box.BoundingBox {
   )
 }
 
-pub fn resize_width_to(
-  img: ansel.Image,
-  resolution width: Int,
+/// Scales an image to the given width, preserving the aspect ratio.
+pub fn scale_width(
+  image img: ansel.Image,
+  to target: Int,
 ) -> Result(ansel.Image, snag.Snag) {
-  resize_by(img, scale: int.to_float(width) /. int.to_float(get_width(img)))
+  scale(img, by: int.to_float(target) /. int.to_float(get_width(img)))
 }
 
-pub fn resize_height_to(
-  img: ansel.Image,
-  resolution height: Int,
+/// Scales an image to the given height, preserving the aspect ratio.
+pub fn scale_height(
+  image img: ansel.Image,
+  to target: Int,
 ) -> Result(ansel.Image, snag.Snag) {
-  resize_by(img, scale: int.to_float(height) /. int.to_float(get_height(img)))
+  scale(img, by: int.to_float(target) /. int.to_float(get_height(img)))
 }
 
-pub fn resize_by(
-  img: ansel.Image,
-  scale scale: Float,
+/// Resizes an image by the given scale, preserving the aspect ratio.
+pub fn scale(
+  image img: ansel.Image,
+  by scale: Float,
 ) -> Result(ansel.Image, snag.Snag) {
   resize_ffi(img, scale)
   |> result.map_error(snag.new)
@@ -344,8 +391,9 @@ pub fn resize_by(
 @external(erlang, "Elixir.Vix.Vips.Operation", "resize")
 fn resize_ffi(img: ansel.Image, scale: Float) -> Result(ansel.Image, String)
 
+/// Writes an image to the specified path in the specified format.
 pub fn write(
-  img: ansel.Image,
+  image img: ansel.Image,
   to path: String,
   in format: ansel.ImageFormat,
 ) -> Result(Nil, snag.Snag) {
@@ -357,6 +405,7 @@ pub fn write(
 @external(erlang, "Elixir.Ansel", "write_to_file")
 fn write_ffi(img: ansel.Image, to path: String) -> Result(Nil, String)
 
+/// Reads an image from the specified path.
 pub fn read(from path: String) -> Result(ansel.Image, snag.Snag) {
   read_ffi(path)
   |> result.map_error(snag.new)
@@ -366,6 +415,7 @@ pub fn read(from path: String) -> Result(ansel.Image, snag.Snag) {
 @external(erlang, "Elixir.Ansel", "read")
 fn read_ffi(from path: String) -> Result(ansel.Image, String)
 
+/// Creates a thumbnail of an image at the specified path with the given width.
 pub fn create_thumbnail(
   from path: String,
   width width: Int,

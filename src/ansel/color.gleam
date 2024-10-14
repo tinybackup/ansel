@@ -1,3 +1,9 @@
+//// Predefined colors and color functions to be used with Ansel image 
+//// operations.
+
+/// Colors supported by Ansel operations. The RGB and RGBA constructors can be
+/// used to create custom colors. Of course, the GleamLucy and GleamNavy colors
+/// are included ;)
 pub type Color {
   RGBA(r: Int, g: Int, b: Int, a: Int)
   RGB(r: Int, g: Int, b: Int)
@@ -149,6 +155,13 @@ pub type Color {
   White
 }
 
+/// Returns a color as a list of integer rbg or rbga bands
+/// 
+/// ## Example
+/// ```gleam
+/// color.to_bands(color.GleamLucy)
+/// // -> [255, 175, 243]
+/// ```
 pub fn to_bands(color: Color) -> List(Int) {
   case color {
     RGBA(r, g, b, a) -> [r, g, b, a]
@@ -159,6 +172,13 @@ pub fn to_bands(color: Color) -> List(Int) {
   }
 }
 
+/// Returns a color as a tuple of integer rgb bands
+/// 
+/// ## Example
+/// ```gleam
+/// color.to_rgb_tuple(color.GleamLucy)
+/// // -> #(255, 175, 243)
+/// ```
 pub fn to_rgb_tuple(color: Color) {
   case color {
     RGBA(r, g, b, _) -> #(r, g, b)
@@ -312,6 +332,13 @@ pub fn to_rgb_tuple(color: Color) {
   }
 }
 
+/// Returns a color as a tuple of integer rgba bands
+/// 
+/// ## Example
+/// ```gleam
+/// color.to_rgba_tuple(color.GleamLucy)
+/// // -> #(255, 175, 243, 255)
+/// ```
 pub fn to_rgba_tuple(color: Color) {
   case color {
     RGBA(r, g, b, a) -> #(r, g, b, a)
@@ -322,7 +349,16 @@ pub fn to_rgba_tuple(color: Color) {
   }
 }
 
-pub fn add_alpha_band(color: Color, alpha: Int) -> Color {
+/// Adds an alpha band of the given value to a color, possibly making it
+/// partially transparent.
+/// 
+/// ## Example
+/// ```gleam
+/// color.add_alpha_band(color.GleamLucy, of: 128)
+/// |> color.to_rgba_tuple
+/// // -> #(255, 175, 243, 128)
+/// ```
+pub fn add_alpha_band(to color: Color, of alpha: Int) -> Color {
   let #(r, g, b) = to_rgb_tuple(color)
   RGBA(r, g, b, alpha)
 }
