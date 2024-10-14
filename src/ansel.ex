@@ -50,4 +50,34 @@ defmodule Ansel do
         {:error, reason}
     end
   end
+
+  def round(image, radius) do
+    width = Image.width(image)
+    height = Image.height(image)
+
+    svg = """
+    <svg viewBox="0 0 #{width} #{height}">
+      <rect
+        rx="#{radius}"
+        ry="#{radius}"
+        x="0"
+        y="0"
+        width="#{width}"
+        height="#{height}"
+        fill="black"
+      />
+    </svg>
+    """
+
+    case Operation.svgload_buffer(svg) do
+      {:ok, {mask, _flags}} -> case Operation.extract_band(mask, 3) do
+        {:ok, band} ->
+          Operation.bandjoin([image, band])
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+      {:error, reason} -> {:error, reason}
+    end
+  end
 end

@@ -40,6 +40,12 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
   }
 }
 
+pub fn main() {
+  new(100, 100, color.GleamLucy)
+  |> result.try(round(_, by_radius: 20.0))
+  |> result.try(write(_, "output", ansel.PNG))
+}
+
 fn format_common_options(quality, keep_metadata) {
   "[Q="
   <> int.to_string(quality)
@@ -48,7 +54,8 @@ fn format_common_options(quality, keep_metadata) {
   <> "]"
 }
 
-/// Fits a fixed bounding box to an image.
+/// Fits a fixed bounding box to an image by dropping any pixels outside the
+/// dimensions of the image.
 /// 
 /// ## Example
 /// 
@@ -56,8 +63,7 @@ fn format_common_options(quality, keep_metadata) {
 /// let assert Ok(bb) = bounding_box.ltwh(4, 2, 40, 30)
 /// let assert Ok(img) = image.new(6, 7, color.GleamLucy)
 /// image.fit_bounding_box(bb, in: img)
-/// |> bounding_box.to_ltwh_tuple
-/// // -> #(4, 2, 2, 5)
+/// // -> bounding_box.ltwh(left: 4, top: 2, width: 2, height: 5)
 /// ```
 pub fn fit_bounding_box(
   bounding_box: bounding_box.BoundingBox,
@@ -93,7 +99,7 @@ pub fn fit_bounding_box(
 pub fn from_bit_array(bin: BitArray) -> Result(ansel.Image, snag.Snag) {
   from_bit_array_ffi(bin)
   |> result.map_error(snag.new)
-  |> snag.context("Failed to read image from bit array")
+  |> snag.context("Unable to read image from bit array")
 }
 
 @external(erlang, "Elixir.Vix.Vips.Image", "new_from_buffer")
@@ -129,7 +135,7 @@ pub fn new(
 ) -> Result(ansel.Image, snag.Snag) {
   new_image_ffi(width, height, color.to_bands(color))
   |> result.map_error(snag.new)
-  |> snag.context("Failed to create new image")
+  |> snag.context("Unable to create new image")
 }
 
 @external(erlang, "Elixir.Ansel", "new_image")
@@ -150,7 +156,7 @@ pub fn extract_area(
 
   extract_area_ffi(image, left, top, width, height)
   |> result.map_error(snag.new)
-  |> snag.context("Failed to extract area from image")
+  |> snag.context("Unable to extract area from image")
 }
 
 @external(erlang, "Elixir.Vix.Vips.Operation", "extract_area")
@@ -170,7 +176,7 @@ pub fn composite_over(
 ) -> Result(ansel.Image, snag.Snag) {
   composite_over_ffi(base, overlay, l, t)
   |> result.map_error(snag.new)
-  |> snag.context("Failed to composite overlay image over base image")
+  |> snag.context("Unable to composite overlay image over base image")
 }
 
 @external(erlang, "Elixir.Ansel", "composite_over")
@@ -248,6 +254,44 @@ pub fn border(
   |> result.try(composite_over(_, image, at_left: thickness, at_top: thickness))
 }
 
+/// Applies a gaussian blur to an image.
+pub fn blur(
+  image: ansel.Image,
+  sigma sigma: Float,
+) -> Result(ansel.Image, snag.Snag) {
+  gaussblur_ffi(image, sigma)
+  |> result.map_error(snag.new)
+  |> snag.context("Unable to blur image")
+}
+
+@external(erlang, "Elixir.Vix.Vips.Operation", "gaussblur")
+fn gaussblur_ffi(img: ansel.Image, sigma: Float) -> Result(ansel.Image, String)
+
+pub fn rotate(
+  image: ansel.Image,
+  by degrees: Float,
+) -> Result(ansel.Image, snag.Snag) {
+  rotate_ffi(image, degrees)
+  |> result.map_error(snag.new)
+  |> snag.context("Unable to rotate image")
+}
+
+@external(erlang, "Elixir.Vix.Vips.Operation", "rotate")
+fn rotate_ffi(img: ansel.Image, degrees: Float) -> Result(ansel.Image, String)
+
+/// Implmentation heavily inspired by the great Image elixir library.
+pub fn round(
+  image: ansel.Image,
+  by_radius radius: Float,
+) -> Result(ansel.Image, snag.Snag) {
+  round_ffi(image, radius)
+  |> result.map_error(snag.new)
+  |> snag.context("Unable to round image")
+}
+
+@external(erlang, "Elixir.Ansel", "round")
+fn round_ffi(img: ansel.Image, radius: Float) -> Result(ansel.Image, String)
+
 @external(erlang, "Elixir.Vix.Vips.Image", "width")
 pub fn get_width(image: ansel.Image) -> Int
 
@@ -283,7 +327,7 @@ pub fn resize_by(
 ) -> Result(ansel.Image, snag.Snag) {
   resize_ffi(img, scale)
   |> result.map_error(snag.new)
-  |> snag.context("Failed to resize image")
+  |> snag.context("Unable to resize image")
 }
 
 @external(erlang, "Elixir.Vix.Vips.Operation", "resize")
@@ -296,7 +340,7 @@ pub fn write(
 ) -> Result(Nil, snag.Snag) {
   write_ffi(img, path <> image_format_to_string(format))
   |> result.map_error(snag.new)
-  |> snag.context("Failed to write image to file")
+  |> snag.context("Unable to write image to file")
 }
 
 @external(erlang, "Elixir.Ansel", "write_to_file")
@@ -305,7 +349,7 @@ fn write_ffi(img: ansel.Image, to path: String) -> Result(Nil, String)
 pub fn read(from path: String) -> Result(ansel.Image, snag.Snag) {
   read_ffi(path)
   |> result.map_error(snag.new)
-  |> snag.context("Failed to read image from file")
+  |> snag.context("Unable to read image from file")
 }
 
 @external(erlang, "Elixir.Ansel", "read")
@@ -317,7 +361,7 @@ pub fn create_thumbnail(
 ) -> Result(ansel.Image, snag.Snag) {
   create_thumbnail_ffi(path, width)
   |> result.map_error(snag.new)
-  |> snag.context("Failed to create thumbnail from file")
+  |> snag.context("Unable to create thumbnail from file")
 }
 
 @external(erlang, "Elixir.Vix.Vips.Operation", "thumbnail")
