@@ -328,12 +328,56 @@ pub fn round_square_test() {
 }
 
 pub fn blur_test() {
-  image.read("test/resources/preblur_13x13.png")
+  image.read("test/resources/complex_13x13.png")
   |> result.try(image.blur(_, with: 1.0))
   |> result.map(image.to_bit_array(_, ansel.PNG))
   |> result.replace_error(Nil)
   |> should.equal(
     simplifile.read_bits("test/resources/blur_13x13.png")
+    |> result.replace_error(Nil),
+  )
+}
+
+pub fn rotate_test() {
+  image.read("test/resources/complex_13x13.png")
+  |> result.try(image.rotate(_, by: 47.0))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/rotated_47.png")
+    |> result.replace_error(Nil),
+  )
+}
+
+pub fn rotate90_test() {
+  image.read("test/resources/complex_13x13.png")
+  |> result.try(image.rotate(_, by: 90.0))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/rotated_90.png")
+    |> result.replace_error(Nil),
+  )
+}
+
+pub fn rotate180_test() {
+  image.read("test/resources/complex_13x13.png")
+  |> result.try(image.rotate(_, by: 180.0))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/rotated_180.png")
+    |> result.replace_error(Nil),
+  )
+}
+
+pub fn rotate270_test() {
+  image.read("test/resources/complex_13x13.png")
+  |> result.try(image.rotate(_, by: 270.0))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/rotated_270.png")
     |> result.replace_error(Nil),
   )
 }

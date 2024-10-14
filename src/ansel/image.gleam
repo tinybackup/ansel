@@ -40,12 +40,6 @@ fn image_format_to_string(format: ansel.ImageFormat) -> String {
   }
 }
 
-pub fn main() {
-  new(100, 100, color.GleamLucy)
-  |> result.try(round(_, by_radius: 20.0))
-  |> result.try(write(_, "output", ansel.PNG))
-}
-
 fn format_common_options(quality, keep_metadata) {
   "[Q="
   <> int.to_string(quality)
@@ -257,7 +251,7 @@ pub fn border(
 /// Applies a gaussian blur to an image.
 pub fn blur(
   image: ansel.Image,
-  sigma sigma: Float,
+  with sigma: Float,
 ) -> Result(ansel.Image, snag.Snag) {
   gaussblur_ffi(image, sigma)
   |> result.map_error(snag.new)
@@ -271,7 +265,15 @@ pub fn rotate(
   image: ansel.Image,
   by degrees: Float,
 ) -> Result(ansel.Image, snag.Snag) {
-  rotate_ffi(image, degrees)
+  // Rotating by an exact degree of 90, 180, or 270 is a special operation
+  // in Vix and is different than the generic rotate operation.
+  case degrees {
+    0.0 -> Ok(image)
+    90.0 -> rotate90_ffi(image)
+    180.0 -> rotate180_ffi(image)
+    270.0 -> rotate270_ffi(image)
+    _ -> rotate_ffi(image, degrees)
+  }
   |> result.map_error(snag.new)
   |> snag.context("Unable to rotate image")
 }
@@ -279,10 +281,19 @@ pub fn rotate(
 @external(erlang, "Elixir.Vix.Vips.Operation", "rotate")
 fn rotate_ffi(img: ansel.Image, degrees: Float) -> Result(ansel.Image, String)
 
+@external(erlang, "Elixir.Ansel", "rotate90")
+fn rotate90_ffi(img: ansel.Image) -> Result(ansel.Image, String)
+
+@external(erlang, "Elixir.Ansel", "rotate180")
+fn rotate180_ffi(img: ansel.Image) -> Result(ansel.Image, String)
+
+@external(erlang, "Elixir.Ansel", "rotate270")
+fn rotate270_ffi(img: ansel.Image) -> Result(ansel.Image, String)
+
 /// Implmentation heavily inspired by the great Image elixir library.
 pub fn round(
   image: ansel.Image,
-  by_radius radius: Float,
+  by radius: Float,
 ) -> Result(ansel.Image, snag.Snag) {
   round_ffi(image, radius)
   |> result.map_error(snag.new)

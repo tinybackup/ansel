@@ -70,14 +70,29 @@ defmodule Ansel do
     """
 
     case Operation.svgload_buffer(svg) do
-      {:ok, {mask, _flags}} -> case Operation.extract_band(mask, 3) do
-        {:ok, band} ->
-          Operation.bandjoin([image, band])
+      {:ok, {mask, _flags}} ->
+        case Operation.extract_band(mask, 3) do
+          {:ok, band} ->
+            Operation.bandjoin([image, band])
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-      {:error, reason} -> {:error, reason}
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
+  end
+
+  def rotate90(image) do
+    Operation.rot(image, :VIPS_ANGLE_D90)
+  end
+
+  def rotate180(image) do
+    Operation.rot(image, :VIPS_ANGLE_D180)
+  end
+
+  def rotate270(image) do
+    Operation.rot(image, :VIPS_ANGLE_D270)
   end
 end
