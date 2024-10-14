@@ -304,3 +304,25 @@ pub fn border_test() {
     |> result.replace_error(Nil),
   )
 }
+
+pub fn round_circle_test() {
+  image.new(20, 20, color.GleamLucy)
+  |> result.try(image.round(_, by_radius: 1000.0))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/circle_20x20.png")
+    |> result.replace_error(Nil),
+  )
+}
+
+pub fn round_square_test() {
+  image.new(20, 20, color.GleamLucy)
+  |> result.try(image.round(_, by_radius: 5.0))
+  |> result.map(image.to_bit_array(_, ansel.PNG))
+  |> result.replace_error(Nil)
+  |> should.equal(
+    simplifile.read_bits("test/resources/rounded_square_20x20.png")
+    |> result.replace_error(Nil),
+  )
+}
