@@ -1,6 +1,7 @@
 import ansel/bounding_box
 import ansel/color
 import ansel/image
+import gleam/list
 import gleam/result
 import gleeunit
 import gleeunit/should
@@ -378,5 +379,59 @@ pub fn rotate270_test() {
   |> should.equal(
     simplifile.read_bits("test/resources/rotated_270.png")
     |> result.replace_error(Nil),
+  )
+}
+
+pub fn to_pixel_list_success_test() {
+  image.new(6, 6, color.GleamLucy)
+  |> result.try(image.to_rgb_list)
+  |> should.be_ok
+}
+
+pub fn to_pixel_list_size_test() {
+  image.new(6, 6, color.GleamLucy)
+  |> result.try(image.to_rgb_list)
+  |> result.map(fn(pixel_rows) {
+    #(
+      list.length(pixel_rows),
+      pixel_rows |> list.first |> result.unwrap([]) |> list.length,
+    )
+  })
+  |> should.equal(Ok(#(6, 6)))
+}
+
+pub fn to_pixel_list_value_test() {
+  image.new(6, 6, color.GleamLucy)
+  |> result.try(image.to_rgb_list)
+  |> result.map(fn(pixel_rows) {
+    pixel_rows
+    |> list.all(fn(pixel_row) {
+      pixel_row
+      |> list.all(fn(pixel) { pixel == color.RGB(255, 175, 243) })
+    })
+  })
+  |> should.equal(Ok(True))
+}
+
+pub fn from_pixel_list_success_test() {
+  list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_rgb_list
+  |> should.be_ok
+}
+
+pub fn from_pixel_list_success_size_test() {
+  list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_rgb_list
+  |> result.map(fn(image) { #(image.get_height(image), image.get_width(image)) })
+  |> should.equal(Ok(#(6, 6)))
+}
+
+pub fn from_pixel_list_success_value_test() {
+  list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_rgb_list
+  |> result.map(image.to_bit_array(_, image.PNG))
+  |> should.equal(
+    image.new(6, 6, color.GleamLucy)
+    |> result.map(image.to_bit_array(_, image.PNG)),
   )
 }

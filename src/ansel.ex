@@ -18,6 +18,14 @@ defmodule Ansel do
     Image.write_to_stream(image, format) |> Enum.into(<<>>)
   end
 
+  def to_rgb_list(image) do
+    Image.to_list(image)
+  end
+
+  def from_binary(binary, height, width) do
+    Image.new_from_binary(binary, height, width, 3, :VIPS_FORMAT_UCHAR)
+  end
+
   def composite_over(base_image, overlay_image, l, t) do
     Operation.composite2(base_image, overlay_image, :VIPS_BLEND_MODE_OVER, x: l, y: t)
   end
