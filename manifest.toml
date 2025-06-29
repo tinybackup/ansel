@@ -17,7 +17,7 @@ packages = [
   { name = "plug", version = "1.16.1", build_tools = ["mix"], requirements = ["mime", "plug_crypto", "telemetry"], otp_app = "plug", source = "hex", outer_checksum = "A13FF6B9006B03D7E33874945B2755253841B238C34071ED85B0E86057F8CDDC" },
   { name = "plug_crypto", version = "2.1.0", build_tools = ["mix"], requirements = [], otp_app = "plug_crypto", source = "hex", outer_checksum = "131216A4B030B8F8CE0F26038BC4421AE60E4BB95C5CF5395E1421437824C4FA" },
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
-  { name = "snag", version = "0.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "54D32E16E33655346AA3E66CBA7E191DE0A8793D2C05284E3EFB90AD2CE92BCC" },
+  { name = "snag", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "7E9F06390040EB5FAB392CE642771484136F2EC103A92AE11BA898C8167E6E17" },
   { name = "table", version = "0.1.2", build_tools = ["mix"], requirements = [], otp_app = "table", source = "hex", outer_checksum = "7E99BC7EFEF806315C7E65640724BF165C3061CDC5D854060F74468367065029" },
   { name = "telemetry", version = "1.3.0", build_tools = ["rebar3"], requirements = [], otp_app = "telemetry", source = "hex", outer_checksum = "7015FC8919DBE63764F4B4B87A95B7C0996BD539E0D499BE6EC9D7F3875B79E6" },
   { name = "vix", version = "0.30.0", build_tools = ["mix", "make"], requirements = ["castore", "cc_precompiler", "elixir_make", "kino"], otp_app = "vix", source = "hex", outer_checksum = "B07E43855C636DE0378BC1730B82ABCAF7DB43C169E7E8C3333AAEDEE7BFDE83" },
@@ -27,5 +27,5 @@ packages = [
 gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 simplifile = { version = ">= 2.2.0 and < 3.0.0" }
-snag = { version = ">= 0.3.0 and < 1.0.0" }
+snag = { version = ">= 0.3.0 and < 2.0.0" }
 vix = { version = ">= 0.30.0 and < 1.0.0" }
