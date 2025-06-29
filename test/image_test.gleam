@@ -1,6 +1,7 @@
 import ansel/bounding_box
 import ansel/color
 import ansel/image
+import gleam/list
 import gleam/result
 import gleeunit
 import gleeunit/should
@@ -27,10 +28,10 @@ pub fn new_solid_grey_test() {
     simplifile.read_bits("test/resources/solid_grey_6x6.avif")
 
   image.new(6, 6, color.Grey)
-  |> result.map(image.to_bit_array(_, image.AVIF(
-    quality: 100,
-    keep_metadata: True,
-  )))
+  |> result.map(image.to_bit_array(
+    _,
+    image.AVIF(quality: 100, keep_metadata: True),
+  ))
   |> should.equal(Ok(bin))
 }
 
@@ -39,10 +40,10 @@ pub fn new_nongrey_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.avif")
 
   image.new(6, 6, color.GleamLucy)
-  |> result.map(image.to_bit_array(_, image.AVIF(
-    quality: 100,
-    keep_metadata: True,
-  )))
+  |> result.map(image.to_bit_array(
+    _,
+    image.AVIF(quality: 100, keep_metadata: True),
+  ))
   |> should.equal(Ok(bin))
 }
 
@@ -51,10 +52,10 @@ pub fn bit_array_avif_round_trip_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.avif")
 
   image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, image.AVIF(
-    quality: 100,
-    keep_metadata: True,
-  )))
+  |> result.map(image.to_bit_array(
+    _,
+    image.AVIF(quality: 100, keep_metadata: True),
+  ))
   |> should.equal(Ok(bin))
 }
 
@@ -63,10 +64,10 @@ pub fn bit_array_jpeg_round_trip_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.jpeg")
 
   image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, image.JPEG(
-    quality: 100,
-    keep_metadata: True,
-  )))
+  |> result.map(image.to_bit_array(
+    _,
+    image.JPEG(quality: 100, keep_metadata: True),
+  ))
   |> should.equal(Ok(bin))
 }
 
@@ -83,10 +84,10 @@ pub fn bit_array_webp_round_trip_test() {
     simplifile.read_bits("test/resources/gleam_lucy_6x6.webp")
 
   image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, image.WebP(
-    quality: 100,
-    keep_metadata: True,
-  )))
+  |> result.map(image.to_bit_array(
+    _,
+    image.WebP(quality: 100, keep_metadata: True),
+  ))
   |> should.equal(Ok(bin))
 }
 
@@ -205,10 +206,10 @@ pub fn resize_scale_up_test() {
 pub fn create_thumbnail_test() {
   let thumb =
     image.create_thumbnail("test/resources/gleam_composite.png", width: 9)
-    |> result.map(image.to_bit_array(_, image.JPEG(
-      quality: 70,
-      keep_metadata: True,
-    )))
+    |> result.map(image.to_bit_array(
+      _,
+      image.JPEG(quality: 70, keep_metadata: True),
+    ))
     |> result.replace_error(Nil)
 
   thumb
@@ -378,5 +379,59 @@ pub fn rotate270_test() {
   |> should.equal(
     simplifile.read_bits("test/resources/rotated_270.png")
     |> result.replace_error(Nil),
+  )
+}
+
+pub fn to_pixel_list_success_test() {
+  image.new(6, 6, color.GleamLucy)
+  |> result.try(image.to_pixel_matrix)
+  |> should.be_ok
+}
+
+pub fn to_pixel_list_size_test() {
+  image.new(6, 6, color.GleamLucy)
+  |> result.try(image.to_pixel_matrix)
+  |> result.map(fn(pixel_rows) {
+    #(
+      list.length(pixel_rows),
+      pixel_rows |> list.first |> result.unwrap([]) |> list.length,
+    )
+  })
+  |> should.equal(Ok(#(6, 6)))
+}
+
+pub fn to_pixel_list_value_test() {
+  image.new(6, 6, color.GleamLucy)
+  |> result.try(image.to_pixel_matrix)
+  |> result.map(fn(pixel_rows) {
+    pixel_rows
+    |> list.all(fn(pixel_row) {
+      pixel_row
+      |> list.all(fn(pixel) { pixel == color.RGB(255, 175, 243) })
+    })
+  })
+  |> should.equal(Ok(True))
+}
+
+pub fn from_pixel_list_success_test() {
+  list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_pixel_matrix
+  |> should.be_ok
+}
+
+pub fn from_pixel_list_success_size_test() {
+  list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_pixel_matrix
+  |> result.map(fn(image) { #(image.get_height(image), image.get_width(image)) })
+  |> should.equal(Ok(#(6, 6)))
+}
+
+pub fn from_pixel_list_success_value_test() {
+  list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_pixel_matrix
+  |> result.map(image.to_bit_array(_, image.PNG))
+  |> should.equal(
+    image.new(6, 6, color.GleamLucy)
+    |> result.map(image.to_bit_array(_, image.PNG)),
   )
 }

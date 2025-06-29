@@ -29,8 +29,10 @@
 import ansel
 import ansel/bounding_box
 import ansel/color
+import gleam/bit_array
 import gleam/bool
 import gleam/int
+import gleam/list
 import gleam/result
 import gleam/string
 import snag
@@ -172,6 +174,72 @@ pub fn to_bit_array(img: ansel.Image, format: ImageFormat) -> BitArray {
 
 @external(erlang, "Elixir.Ansel", "to_bit_array")
 fn to_bit_array_ffi(img: ansel.Image, format: String) -> BitArray
+
+/// Converts a vips image into a matrix of pixel values.
+///
+/// ## Example
+/// ```gleam 
+/// image.new(6, 6, GleamLucy)
+/// |> image.to_pixel_matrix
+/// // -> Ok([[RGB(255, 175, 243), ...],
+///           [RGB(255, 175, 243), ...],
+///           ...
+///           [RGB(255, 175, 243), ...]])
+/// ``` 
+pub fn to_pixel_matrix(
+  img: ansel.Image,
+) -> Result(List(List(color.Color)), snag.Snag) {
+  img
+  |> to_rgb_matrix_ffi
+  |> result.map(fn(pixels) {
+    pixels
+    |> list.map(fn(pixel_row) {
+      pixel_row
+      |> list.map(fn(pixel) {
+        let assert [r, g, b] = pixel
+        color.RGB(r: r, g: g, b: b)
+      })
+    })
+  })
+  |> result.map_error(snag.new)
+  |> snag.context("Unable to read image into pixel list")
+}
+
+@external(erlang, "Elixir.Ansel", "to_rgb_list")
+fn to_rgb_matrix_ffi(img: ansel.Image) -> Result(List(List(List(Int))), String)
+
+/// Converts a matrix of pixel values into a vips image.
+///
+/// ## Example
+/// ```gleam 
+/// list.repeat(list.repeat(RGB(255, 175, 243), 6), 6)
+/// |> image.from_pixel_matrix
+/// // -> Ok(ansel.Image) 
+/// // Same as image.new(6, 6, GleamLucy)
+/// ``` 
+pub fn from_pixel_matrix(
+  pixels: List(List(color.Color)),
+) -> Result(ansel.Image, snag.Snag) {
+  let height = list.length(pixels)
+  let width = pixels |> list.first |> result.unwrap([]) |> list.length
+  pixels
+  |> list.flatten
+  |> list.map(fn(rgb) -> BitArray {
+    let assert color.RGB(r, g, b) = rgb
+    <<r, g, b>>
+  })
+  |> bit_array.concat
+  |> from_binary_ffi(height, width)
+  |> result.map_error(snag.new)
+  |> snag.context("Unable to convert rgb list into ansel image")
+}
+
+@external(erlang, "Elixir.Ansel", "from_binary")
+fn from_binary_ffi(
+  pixels: BitArray,
+  height: Int,
+  width: Int,
+) -> Result(ansel.Image, String)
 
 /// Creates a new image with the specified width, height, and color
 /// 
