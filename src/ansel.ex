@@ -5,17 +5,17 @@ defmodule Ansel do
     Path.expand(path) |> Image.new_from_file()
   end
 
-  def write_to_file(img, path) do
-    save_path = Path.expand(path)
+  def write_to_file(img, path, {:format_components, extension, options}) do
+    save_path = Path.expand(path <> extension)
 
-    case Image.write_to_file(img, save_path) do
-      :ok -> {:ok, nil}
+    case Image.write_to_file(img, save_path <> options) do
+      :ok -> {:ok, save_path}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  def to_bit_array(image, format) do
-    Image.write_to_stream(image, format) |> Enum.into(<<>>)
+  def to_bit_array(image, {:format_components, extension, options}) do
+    Image.write_to_stream(image, extension <> options) |> Enum.into(<<>>)
   end
 
   def to_rgb_list(image) do

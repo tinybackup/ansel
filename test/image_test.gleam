@@ -3,6 +3,7 @@ import ansel/color
 import ansel/image
 import gleam/list
 import gleam/result
+import gleam/string
 import gleeunit
 import gleeunit/should
 import simplifile
@@ -21,6 +22,26 @@ pub fn read_test() {
 
   image.get_width(img)
   |> should.equal(6)
+}
+
+pub fn write_test() {
+  let path = "test/tmp_write_test_asset"
+
+  let output_path =
+    image.new(5, 5, color.GleamLucy)
+    |> should.be_ok
+    |> image.write(path, image.JPEG(quality: 100, keep_metadata: True))
+    |> should.be_ok()
+
+  string.ends_with(output_path, "jpeg")
+  |> should.be_true()
+
+  image.read(output_path)
+  |> should.be_ok
+  |> image.get_width
+  |> should.equal(5)
+
+  let assert Ok(_) = simplifile.delete(output_path)
 }
 
 pub fn new_solid_grey_test() {
