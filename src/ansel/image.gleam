@@ -42,7 +42,7 @@ import snag
 /// own vips binary on the host system to. See the package readme for details.
 /// 
 /// The `Custom` constructor allows for advanced vips save options to be 
-/// used, like `ansel.Custom(".png[compression=90,squash=true]"), refer to the 
+/// used, like `ansel.Custom(".png", "[compression=90,squash=true]")`, refer to the 
 /// [Vix package documentation](https://hexdocs.pm/vix/Vix.Vips.Image.html#write_to_file/2) 
 /// for details.
 pub type ImageFormat {
@@ -65,38 +65,42 @@ pub type ImageFormat {
   Analyze
   NIfTI
   DeepZoom
-  Custom(format: String)
+  Custom(extension: String, format: String)
 }
 
-fn image_format_to_string(format: ImageFormat) -> String {
+type FormatComponents {
+  FormatComponents(extension: String, options: String)
+}
+
+fn image_format_to_string(format: ImageFormat) -> FormatComponents {
   case format {
     JPEG(quality:, keep_metadata:) ->
-      ".jpeg" <> format_common_options(quality, keep_metadata)
+      FormatComponents(".jpeg", format_common_options(quality, keep_metadata))
     JPEG2000(quality:, keep_metadata:) ->
-      ".jp2" <> format_common_options(quality, keep_metadata)
+      FormatComponents(".jp2", format_common_options(quality, keep_metadata))
     JPEGXL(quality:, keep_metadata:) ->
-      ".jxl" <> format_common_options(quality, keep_metadata)
-    PNG -> ".png"
+      FormatComponents(".jxl", format_common_options(quality, keep_metadata))
+    PNG -> FormatComponents(".png", "")
     WebP(quality:, keep_metadata:) ->
-      ".webp" <> format_common_options(quality, keep_metadata)
+      FormatComponents(".webp", format_common_options(quality, keep_metadata))
     AVIF(quality:, keep_metadata:) ->
-      ".avif" <> format_common_options(quality, keep_metadata)
+      FormatComponents(".avif", format_common_options(quality, keep_metadata))
     TIFF(quality:, keep_metadata:) ->
-      ".tiff" <> format_common_options(quality, keep_metadata)
+      FormatComponents(".tiff", format_common_options(quality, keep_metadata))
     HEIC(quality:, keep_metadata:) ->
-      ".heic" <> format_common_options(quality, keep_metadata)
-    FITS -> ".fits"
-    Matlab -> ".mat"
-    PDF -> ".pdf"
-    SVG -> ".svg"
-    HDR -> ".hdr"
-    PPM -> ".ppm"
-    CSV -> ".csv"
-    GIF -> ".gif"
-    Analyze -> ".analyze"
-    NIfTI -> ".nii"
-    DeepZoom -> ".dzi"
-    Custom(format:) -> format
+      FormatComponents(".heic", format_common_options(quality, keep_metadata))
+    FITS -> FormatComponents(".fits", "")
+    Matlab -> FormatComponents(".mat", "")
+    PDF -> FormatComponents(".pdf", "")
+    SVG -> FormatComponents(".svg", "")
+    HDR -> FormatComponents(".hdr", "")
+    PPM -> FormatComponents(".ppm", "")
+    CSV -> FormatComponents(".csv", "")
+    GIF -> FormatComponents(".gif", "")
+    Analyze -> FormatComponents(".analyze", "")
+    NIfTI -> FormatComponents(".nii", "")
+    DeepZoom -> FormatComponents(".dzi", "")
+    Custom(extension:, format:) -> FormatComponents(extension, format)
   }
 }
 
@@ -173,7 +177,7 @@ pub fn to_bit_array(img: ansel.Image, format: ImageFormat) -> BitArray {
 }
 
 @external(erlang, "Elixir.Ansel", "to_bit_array")
-fn to_bit_array_ffi(img: ansel.Image, format: String) -> BitArray
+fn to_bit_array_ffi(img: ansel.Image, format: FormatComponents) -> BitArray
 
 /// Converts a vips image into a matrix of pixel values.
 ///
@@ -491,18 +495,32 @@ pub fn scale(
 fn resize_ffi(img: ansel.Image, scale: Float) -> Result(ansel.Image, String)
 
 /// Writes an image to the specified path in the specified format.
+/// A filename extension is added automatically to the path, based on the format,
+/// and therefore should not be provided by the user.
+/// Returns the absolute path to the image as it was written to disk, including the extension.
+/// 
+/// ## Example
+/// ```gleam
+/// image.new(6, 6, color.Olive)
+/// |> image.write(to: "wobble", in: image.PNG)
+/// // -> Ok("Users/lucy/myproject/wobble.png")
+/// ```
 pub fn write(
   image img: ansel.Image,
   to path: String,
   in format: ImageFormat,
-) -> Result(Nil, snag.Snag) {
-  write_ffi(img, path <> image_format_to_string(format))
+) -> Result(String, snag.Snag) {
+  write_ffi(img, path, image_format_to_string(format))
   |> result.map_error(snag.new)
   |> snag.context("Unable to write image to file")
 }
 
 @external(erlang, "Elixir.Ansel", "write_to_file")
-fn write_ffi(img: ansel.Image, to path: String) -> Result(Nil, String)
+fn write_ffi(
+  img: ansel.Image,
+  to path: String,
+  using format: FormatComponents,
+) -> Result(String, String)
 
 /// Reads an image from the specified path.
 pub fn read(from path: String) -> Result(ansel.Image, snag.Snag) {
