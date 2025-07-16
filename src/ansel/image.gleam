@@ -42,9 +42,11 @@ import snag
 /// own vips binary on the host system to. See the package readme for details.
 /// 
 /// The `Custom` constructor allows for advanced vips save options to be 
-/// used, like `ansel.Custom(".png", "[compression=90,squash=true]")`, refer to the 
-/// [Vix package documentation](https://hexdocs.pm/vix/Vix.Vips.Image.html#write_to_file/2) 
-/// for details.
+/// used as a comma separated list, like `ansel.Custom(".png", "compression=90,squash=true")`,
+/// which is equivalent to the `.png[compression=90,squash=true]` syntax used in vips.
+/// 
+/// You can use the libvips CLI to print a list of all supported options for each image format,
+///  e.g. `vips pngsave`, `vips jpegsave`.
 pub type ImageFormat {
   JPEG(quality: Int, keep_metadata: Bool)
   JPEG2000(quality: Int, keep_metadata: Bool)
@@ -100,7 +102,8 @@ fn image_format_to_string(format: ImageFormat) -> FormatComponents {
     Analyze -> FormatComponents(".analyze", "")
     NIfTI -> FormatComponents(".nii", "")
     DeepZoom -> FormatComponents(".dzi", "")
-    Custom(extension:, format:) -> FormatComponents(extension, format)
+    Custom(extension:, format:) ->
+      FormatComponents(extension, "[" <> format <> "]")
   }
 }
 

@@ -44,6 +44,17 @@ pub fn write_test() {
   let assert Ok(_) = simplifile.delete(output_path)
 }
 
+pub fn custom_options_test() {
+  let assert Ok(reference_image) = image.new(6, 6, color.Grey)
+  let output =
+    reference_image
+    |> image.to_bit_array(image.JPEG(quality: 50, keep_metadata: True))
+
+  reference_image
+  |> image.to_bit_array(image.Custom(".jpeg", "Q=50,strip=false"))
+  |> should.equal(output)
+}
+
 pub fn new_solid_grey_test() {
   let assert Ok(bin) =
     simplifile.read_bits("test/resources/solid_grey_6x6.avif")
