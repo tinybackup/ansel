@@ -467,3 +467,31 @@ pub fn from_pixel_list_success_value_test() {
     |> result.map(image.to_bit_array(_, image.PNG)),
   )
 }
+
+pub fn pixel_matrix_round_trip_dimensions_test() {
+  let height = 100
+  let width = 50
+
+  let assert Ok(original_img) = image.new(width, height, color.GleamLucy)
+  let original_size = #(
+    image.get_height(original_img),
+    image.get_width(original_img),
+  )
+
+  let assert Ok(pixel_matrix) = image.to_pixel_matrix(original_img)
+
+  // Verify pixel matrix dimensions match original
+  let matrix_size = #(
+    list.length(pixel_matrix),
+    pixel_matrix |> list.first |> result.unwrap([]) |> list.length,
+  )
+  matrix_size |> should.equal(original_size)
+
+  let assert Ok(converted_img) = image.from_pixel_matrix(pixel_matrix)
+  let converted_size = #(
+    image.get_height(converted_img),
+    image.get_width(converted_img),
+  )
+
+  converted_size |> should.equal(original_size)
+}

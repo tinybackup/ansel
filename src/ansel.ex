@@ -23,7 +23,7 @@ defmodule Ansel do
   end
 
   def from_binary(binary, height, width) do
-    Image.new_from_binary(binary, height, width, 3, :VIPS_FORMAT_UCHAR)
+    Image.new_from_binary(binary, width, height, 3, :VIPS_FORMAT_UCHAR)
   end
 
   def composite_over(base_image, overlay_image, l, t) do
