@@ -5,6 +5,99 @@ defmodule Ansel do
     Path.expand(path) |> Image.new_from_file()
   end
 
+  def from_bit_array_with_options(bin, options) do
+    Image.new_from_buffer(bin, parse_options(options))
+  rescue
+    # Vix raises when the value of an option is not of the type the loader
+    # wants, and the message it raises with says what the type should be.
+    e in [ArgumentError, FunctionClauseError] ->
+      {:error, "Bad image loader option value: #{Exception.message(e)}"}
+  end
+
+  # Options come in as the comma separated list vips filenames use, like
+  # "n=-1,access=VIPS_ACCESS_SEQUENTIAL", and have to be handed to Vix as a
+  # keyword list. Vix drops any option the image loader does not have.
+  defp parse_options(options) do
+    options
+    |> String.split(",", trim: true)
+    |> Enum.map(&parse_option/1)
+  end
+
+  defp parse_option(option) do
+    case String.split(option, "=", parts: 2) do
+      [name, value] ->
+        {String.to_atom(String.trim(name)), cast_option_value(String.trim(value))}
+
+      # As in vips, an option given without a value is a flag that is on
+      [name] ->
+        {String.to_atom(String.trim(name)), true}
+    end
+  end
+
+  # Vips loader options are typed, but they are written as strings here, so the
+  # type has to be guessed from the value.
+  defp cast_option_value("true"), do: true
+  defp cast_option_value("false"), do: false
+
+  defp cast_option_value(value) do
+    case Integer.parse(value) do
+      {int, ""} ->
+        int
+
+      _ ->
+        case Float.parse(value) do
+          {float, ""} -> float
+          _ -> cast_enum_option_value(value)
+        end
+    end
+  end
+
+  # Enum values, like the VIPS_ACCESS_SEQUENTIAL of access=VIPS_ACCESS_SEQUENTIAL,
+  # are atoms in Vix. Every enum value vips knows about already exists as an
+  # atom, so an unknown one is left as a string for the loader to complain about.
+  defp cast_enum_option_value("VIPS_" <> _ = value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> value
+  end
+
+  defp cast_enum_option_value(value), do: value
+
+  def n_pages(image) do
+    div(Image.height(image), page_height(image))
+  end
+
+  def scale(image, scale) do
+    page_height = page_height(image)
+
+    if Image.height(image) > page_height do
+      # Resizing a stack of pages directly would leave the recorded page height
+      # behind and smear the pages into each other. thumbnail_image knows about
+      # pages and lines the resized ones back up for us.
+      Operation.thumbnail_image(image, max(round(Image.width(image) * scale), 1),
+        height: max(round(page_height * scale), 1),
+        size: :VIPS_SIZE_FORCE
+      )
+    else
+      Operation.resize(image, scale)
+    end
+  end
+
+  # The height of a single page, which is the height of the whole image for
+  # images of one page. Vips only honours a page height the image height is a
+  # multiple of, so the same rule is applied here.
+  defp page_height(image) do
+    height = Image.height(image)
+
+    with {:ok, page_height} when is_integer(page_height) <-
+           Image.header_value(image, "page-height"),
+         true <- page_height > 0 and rem(height, page_height) == 0 do
+      page_height
+    else
+      _ -> height
+    end
+  end
+
   def write_to_file(img, path, {:format_components, extension, options}) do
     save_path = Path.expand(path <> extension)
 

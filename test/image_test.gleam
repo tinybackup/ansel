@@ -495,3 +495,198 @@ pub fn pixel_matrix_round_trip_dimensions_test() {
 
   converted_size |> should.equal(original_size)
 }
+
+const animated_gif = "test/resources/animated_8x8_3frames.gif"
+
+pub fn from_bit_array_reads_first_frame_only_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  let img = image.from_bit_array(bin) |> should.be_ok
+
+  image.get_width(img)
+  |> should.equal(8)
+
+  image.get_height(img)
+  |> should.equal(8)
+
+  image.get_n_pages(img)
+  |> should.equal(1)
+}
+
+pub fn from_bit_array_with_options_reads_all_frames_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  let img =
+    image.from_bit_array_with_options(bin, options: "n=-1")
+    |> should.be_ok
+
+  image.get_width(img)
+  |> should.equal(8)
+
+  // All three frames are read into one image, stacked on top of each other
+  image.get_height(img)
+  |> should.equal(24)
+
+  image.get_n_pages(img)
+  |> should.equal(3)
+}
+
+pub fn from_bit_array_with_enum_option_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  image.from_bit_array_with_options(
+    bin,
+    options: "n=2,access=VIPS_ACCESS_SEQUENTIAL",
+  )
+  |> should.be_ok
+  |> image.get_height
+  |> should.equal(16)
+}
+
+pub fn from_bit_array_with_unsupported_option_test() {
+  let assert Ok(bin) = simplifile.read_bits("test/resources/gleam_lucy_6x6.png")
+
+  // The png loader has no n option, so it is ignored
+  image.from_bit_array_with_options(bin, options: "n=-1")
+  |> should.be_ok
+  |> image.get_height
+  |> should.equal(6)
+}
+
+pub fn from_bit_array_with_unknown_option_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  image.from_bit_array_with_options(bin, options: "wibble=-1,n=-1")
+  |> should.be_ok
+  |> image.get_n_pages
+  |> should.equal(3)
+}
+
+pub fn from_bit_array_with_bad_option_value_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  // The n option is a number, not a word
+  image.from_bit_array_with_options(bin, options: "n=all")
+  |> should.be_error
+}
+
+pub fn write_all_frames_test() {
+  let path = "test/tmp_write_animated_test_asset"
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  let output_path =
+    image.from_bit_array_with_options(bin, options: "n=-1")
+    |> should.be_ok
+    |> image.write(path, image.GIF)
+    |> should.be_ok
+
+  let assert Ok(written) = simplifile.read_bits(output_path)
+
+  // The written image still holds all three frames
+  image.from_bit_array_with_options(written, options: "n=-1")
+  |> should.be_ok
+  |> image.get_height
+  |> should.equal(24)
+
+  let assert Ok(_) = simplifile.delete(output_path)
+}
+
+pub fn n_pages_of_still_image_test() {
+  let assert Ok(img) = image.new(width: 6, height: 6, color: color.GleamLucy)
+
+  image.get_n_pages(img)
+  |> should.equal(1)
+}
+
+pub fn scale_all_pages_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  let scaled =
+    image.from_bit_array_with_options(bin, options: "n=-1")
+    |> should.be_ok
+    |> image.scale(by: 2.0)
+    |> should.be_ok
+
+  image.get_n_pages(scaled)
+  |> should.equal(3)
+
+  image.get_width(scaled)
+  |> should.equal(16)
+
+  image.get_height(scaled)
+  |> should.equal(48)
+}
+
+pub fn scale_width_all_pages_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  let scaled =
+    image.from_bit_array_with_options(bin, options: "n=-1")
+    |> should.be_ok
+    |> image.scale_width(to: 4)
+    |> should.be_ok
+
+  image.get_n_pages(scaled)
+  |> should.equal(3)
+
+  image.get_height(scaled)
+  |> should.equal(12)
+}
+
+pub fn scale_height_all_pages_test() {
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  // The target height is the height of a single page, not of the whole stack
+  let scaled =
+    image.from_bit_array_with_options(bin, options: "n=-1")
+    |> should.be_ok
+    |> image.scale_height(to: 4)
+    |> should.be_ok
+
+  image.get_n_pages(scaled)
+  |> should.equal(3)
+
+  image.get_width(scaled)
+  |> should.equal(4)
+
+  image.get_height(scaled)
+  |> should.equal(12)
+}
+
+pub fn write_scaled_pages_test() {
+  let path = "test/tmp_write_scaled_animated_test_asset"
+  let assert Ok(bin) = simplifile.read_bits(animated_gif)
+
+  let output_path =
+    image.from_bit_array_with_options(bin, options: "n=-1")
+    |> should.be_ok
+    |> image.scale(by: 2.0)
+    |> should.be_ok
+    |> image.write(path, image.GIF)
+    |> should.be_ok
+
+  let assert Ok(written) = simplifile.read_bits(output_path)
+
+  // The scaled image is written with all three of its frames
+  let img =
+    image.from_bit_array_with_options(written, options: "n=-1")
+    |> should.be_ok
+
+  image.get_n_pages(img)
+  |> should.equal(3)
+
+  image.get_width(img)
+  |> should.equal(16)
+
+  let assert Ok(_) = simplifile.delete(output_path)
+}
+
+pub fn read_with_options_test() {
+  let img = image.read(animated_gif <> "[n=-1]") |> should.be_ok
+
+  image.get_n_pages(img)
+  |> should.equal(3)
+
+  image.get_height(img)
+  |> should.equal(24)
+}

@@ -2,11 +2,11 @@
 //// is a wrapper around the great image processing library vips. A pre-built
 //// vips binary comes with Vix, but see the readme for more information on
 //// how to bring your own to support more image formats.
-//// 
-//// This module uses the [snag package](https://hexdocs.pm/snag/index.html) for 
-//// error handling because vix errors just come back as strings and are not 
+////
+//// This module uses the [snag package](https://hexdocs.pm/snag/index.html) for
+//// error handling because vix errors just come back as strings and are not
 //// enumerated. Make sure to install it as well to work with the error messages.
-//// 
+////
 //// ```gleam
 //// import ansel
 //// import ansel/image
@@ -40,11 +40,11 @@ import snag
 /// Image formats supported by vips. All may not be supported by the default
 /// vips binary included with this package, you may need to provide your
 /// own vips binary on the host system to. See the package readme for details.
-/// 
-/// The `Custom` constructor allows for advanced vips save options to be 
+///
+/// The `Custom` constructor allows for advanced vips save options to be
 /// used as a comma separated list, like `ansel.Custom(".png", "compression=90,squash=true")`,
 /// which is equivalent to the `.png[compression=90,squash=true]` syntax used in vips.
-/// 
+///
 /// You can use the libvips CLI to print a list of all supported options for each image format,
 ///  e.g. `vips pngsave`, `vips jpegsave`.
 pub type ImageFormat {
@@ -117,9 +117,9 @@ fn format_common_options(quality, keep_metadata) {
 
 /// Fits a fixed bounding box to an image by dropping any pixels outside the
 /// dimensions of the image.
-/// 
+///
 /// ## Example
-/// 
+///
 /// ```gleam
 /// let assert Ok(bb) = bounding_box.ltwh(4, 2, 40, 30)
 /// let assert Ok(img) = image.new(6, 7, color.GleamLucy)
@@ -149,8 +149,9 @@ pub fn fit_bounding_box(
   }
 }
 
-/// Reads a vips image from a bit array
-/// 
+/// Reads a vips image from a bit array. See `from_bit_array_with_options` to
+/// pass loading options to vips.
+///
 /// ## Example
 /// ```gleam
 /// simplifile.read_bits("input.jpeg")
@@ -166,9 +167,40 @@ pub fn from_bit_array(bin: BitArray) -> Result(ansel.Image, snag.Snag) {
 @external(erlang, "Elixir.Vix.Vips.Image", "new_from_buffer")
 fn from_bit_array_ffi(bin: BitArray) -> Result(ansel.Image, String)
 
+/// Reads a vips image from a bit array, passing the given options to the vips
+/// image loader. Options are given as a comma separated list, like
+/// `image.from_bit_array_with_options(bin, "n=-1,access=VIPS_ACCESS_SEQUENTIAL")`,
+/// which is equivalent to the `input.gif[n=-1,access=VIPS_ACCESS_SEQUENTIAL]`
+/// syntax used in vips. Options that the loader of the image does not support
+/// are ignored.
+///
+/// You can use the libvips CLI to print a list of all supported options for
+/// each image format, e.g. `vips gifload_buffer`, `vips jpegload_buffer`.
+///
+/// ## Example
+/// ```gleam
+/// simplifile.read_bits("input.gif")
+/// |> result.try(image.from_bit_array_with_options(_, options: "n=-1"))
+/// // -> Ok(ansel.Image) holding every frame of the gif
+/// ```
+pub fn from_bit_array_with_options(
+  bin: BitArray,
+  options options: String,
+) -> Result(ansel.Image, snag.Snag) {
+  from_bit_array_with_options_ffi(bin, options)
+  |> result.map_error(snag.new)
+  |> snag.context("Unable to read image from bit array")
+}
+
+@external(erlang, "Elixir.Ansel", "from_bit_array_with_options")
+fn from_bit_array_with_options_ffi(
+  bin: BitArray,
+  options: String,
+) -> Result(ansel.Image, String)
+
 /// Saves a vips image to a bit array. Assumes your vips was built with the
 /// correct encoder support for the format to save in.
-/// 
+///
 /// ## Example
 /// ```gleam
 /// image.new(6, 6, color.GleamLucy)
@@ -185,14 +217,14 @@ fn to_bit_array_ffi(img: ansel.Image, format: FormatComponents) -> BitArray
 /// Converts a vips image into a matrix of pixel values.
 ///
 /// ## Example
-/// ```gleam 
+/// ```gleam
 /// image.new(6, 6, GleamLucy)
 /// |> image.to_pixel_matrix
 /// // -> Ok([[RGB(255, 175, 243), ...],
 ///           [RGB(255, 175, 243), ...],
 ///           ...
 ///           [RGB(255, 175, 243), ...]])
-/// ``` 
+/// ```
 pub fn to_pixel_matrix(
   img: ansel.Image,
 ) -> Result(List(List(color.Color)), snag.Snag) {
@@ -218,12 +250,12 @@ fn to_rgb_matrix_ffi(img: ansel.Image) -> Result(List(List(List(Int))), String)
 /// Converts a matrix of pixel values into a vips image.
 ///
 /// ## Example
-/// ```gleam 
+/// ```gleam
 /// list.repeat(list.repeat(RGB(255, 175, 243), 6), 6)
 /// |> image.from_pixel_matrix
-/// // -> Ok(ansel.Image) 
+/// // -> Ok(ansel.Image)
 /// // Same as image.new(6, 6, GleamLucy)
-/// ``` 
+/// ```
 pub fn from_pixel_matrix(
   pixels: List(List(color.Color)),
 ) -> Result(ansel.Image, snag.Snag) {
@@ -249,7 +281,7 @@ fn from_binary_ffi(
 ) -> Result(ansel.Image, String)
 
 /// Creates a new image with the specified width, height, and color
-/// 
+///
 /// ## Example
 /// ```gleam
 /// image.new(6, 6, color.Olive)
@@ -272,7 +304,7 @@ fn new_image_ffi(
   color: List(Int),
 ) -> Result(ansel.Image, String)
 
-/// Extracts an area out of an image, resulting in a new image of the 
+/// Extracts an area out of an image, resulting in a new image of the
 /// extracted area.
 pub fn extract_area(
   from image: ansel.Image,
@@ -315,7 +347,7 @@ fn composite_over_ffi(
   y: Int,
 ) -> Result(ansel.Image, String)
 
-/// Fills in an area of the passed image with a solid color. 
+/// Fills in an area of the passed image with a solid color.
 pub fn fill(
   image: ansel.Image,
   in bounding_box: bounding_box.BoundingBox,
@@ -367,7 +399,7 @@ pub fn outline(
   }
 }
 
-/// Add a solid border around the passed image, expanding the 
+/// Add a solid border around the passed image, expanding the
 /// dimensions of the image by the border thickness. Replaces any transparent
 /// pixels with the color of the border. This can be used with the round
 /// function to add a rounded border to an image.
@@ -432,10 +464,10 @@ fn rotate180_ffi(img: ansel.Image) -> Result(ansel.Image, String)
 @external(erlang, "Elixir.Ansel", "rotate270")
 fn rotate270_ffi(img: ansel.Image) -> Result(ansel.Image, String)
 
-/// Rounds the corners of an image by a given radius, leaving transparent 
-/// pixels where the rounding was applied. A large radius can be given to 
-/// create circular images. This can be used with the border function to 
-/// create rounded borders around images. This implmentation is heavily 
+/// Rounds the corners of an image by a given radius, leaving transparent
+/// pixels where the rounding was applied. A large radius can be given to
+/// create circular images. This can be used with the border function to
+/// create rounded borders around images. This implmentation is heavily
 /// inspired by the extensive elixir library Image.
 pub fn round(
   image image: ansel.Image,
@@ -456,6 +488,19 @@ pub fn get_width(image: ansel.Image) -> Int
 /// Returns the height of an image.
 @external(erlang, "Elixir.Vix.Vips.Image", "height")
 pub fn get_height(image: ansel.Image) -> Int
+
+/// Returns the number of pages held in an image. Animated images have a page
+/// per frame, and all other images have a single page.
+///
+/// ## Example
+/// ```gleam
+/// let assert Ok(bin) = simplifile.read_bits("input.gif")
+/// let assert Ok(img) = image.from_bit_array_with_options(bin, options: "n=-1")
+/// image.get_n_pages(img)
+/// // -> 12
+/// ```
+@external(erlang, "Elixir.Ansel", "n_pages")
+pub fn get_n_pages(image: ansel.Image) -> Int
 
 /// Returns the dimensions of an image as a bounding box. Useful for bounding
 /// box operations.
@@ -481,27 +526,29 @@ pub fn scale_height(
   image img: ansel.Image,
   to target: Int,
 ) -> Result(ansel.Image, snag.Snag) {
-  scale(img, by: int.to_float(target) /. int.to_float(get_height(img)))
+  let page_height = get_height(img) / get_n_pages(img)
+  scale(img, by: int.to_float(target) /. int.to_float(page_height))
 }
 
-/// Resizes an image by the given scale, preserving the aspect ratio.
+/// Resizes an image by the given scale, preserving the aspect ratio. Every page
+/// of an image with more than one page, like an animated image, is scaled.
 pub fn scale(
   image img: ansel.Image,
   by scale: Float,
 ) -> Result(ansel.Image, snag.Snag) {
-  resize_ffi(img, scale)
+  scale_ffi(img, scale)
   |> result.map_error(snag.new)
   |> snag.context("Unable to resize image")
 }
 
-@external(erlang, "Elixir.Vix.Vips.Operation", "resize")
-fn resize_ffi(img: ansel.Image, scale: Float) -> Result(ansel.Image, String)
+@external(erlang, "Elixir.Ansel", "scale")
+fn scale_ffi(img: ansel.Image, scale: Float) -> Result(ansel.Image, String)
 
 /// Writes an image to the specified path in the specified format.
 /// A filename extension is added automatically to the path, based on the format,
 /// and therefore should not be provided by the user.
 /// Returns the absolute path to the image as it was written to disk, including the extension.
-/// 
+///
 /// ## Example
 /// ```gleam
 /// image.new(6, 6, color.Olive)
@@ -526,6 +573,16 @@ fn write_ffi(
 ) -> Result(String, String)
 
 /// Reads an image from the specified path.
+///
+/// Options for the vips image loader can be appended to the path as a comma
+/// separated list in brackets, like `image.read("input.gif[n=-1]")`, which is
+/// the syntax used in vips.
+///
+/// ## Example
+/// ```gleam
+/// image.read("input.gif[n=-1]")
+/// // -> Ok(ansel.Image) holding every frame of the gif
+/// ```
 pub fn read(from path: String) -> Result(ansel.Image, snag.Snag) {
   read_ffi(path)
   |> result.map_error(snag.new)
