@@ -1,6 +1,8 @@
+import ansel
 import ansel/bounding_box
 import ansel/color
 import ansel/image
+import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
@@ -15,6 +17,83 @@ pub fn main() {
 fn assert_ltwh(left l: Int, top t: Int, width w: Int, height h: Int) {
   let assert Ok(value) = bounding_box.ltwh(left: l, top: t, width: w, height: h)
   value
+}
+
+/// The bands of every pixel of an image, row by row, like
+/// [[[255, 175, 243], ...], ...]. The tests compare these instead of encoded
+/// image bytes, as a different build of vips can encode the same pixels into
+/// different bytes.
+type Pixels =
+  List(List(List(Int)))
+
+@external(erlang, "Elixir.Vix.Vips.Image", "to_list")
+fn to_pixels(image: ansel.Image) -> Result(Pixels, String)
+
+fn pixels_of(image: ansel.Image) -> Pixels {
+  to_pixels(image) |> should.be_ok
+}
+
+fn pixels_of_file(path: String) -> Pixels {
+  image.read(path) |> should.be_ok |> pixels_of
+}
+
+/// Asserts an image has exactly the given pixels. Only for operations that
+/// work out the same pixels every time, like compositing or a quarter turn.
+fn should_have_pixels(image: ansel.Image, expected: Pixels) {
+  should_have_pixels_within(image, expected, tolerance: 0)
+}
+
+/// Asserts an image has the given pixels, give or take the tolerance, for
+/// operations that do not have to give the same answer to the last band value
+/// on every machine, like lossy encoders and interpolation.
+fn should_have_pixels_within(
+  image: ansel.Image,
+  expected: Pixels,
+  tolerance tolerance: Int,
+) {
+  let actual = pixels_of(image)
+
+  size_of(actual)
+  |> should.equal(size_of(expected))
+
+  let difference = max_band_difference(actual, expected)
+
+  case difference <= tolerance {
+    True -> Nil
+    False ->
+      panic as string.concat([
+          "\nPixel bands differ by up to ",
+          int.to_string(difference),
+          "\nshould differ by at most ",
+          int.to_string(tolerance),
+        ])
+  }
+}
+
+fn size_of(pixels: Pixels) -> #(Int, Int, Int) {
+  let first_row = pixels |> list.first |> result.unwrap([])
+  let first_pixel = first_row |> list.first |> result.unwrap([])
+
+  #(list.length(pixels), list.length(first_row), list.length(first_pixel))
+}
+
+fn max_band_difference(actual: Pixels, expected: Pixels) -> Int {
+  list.zip(actual, expected)
+  |> list.fold(0, fn(difference, rows) {
+    let #(actual_row, expected_row) = rows
+
+    list.zip(actual_row, expected_row)
+    |> list.fold(difference, fn(difference, pixels) {
+      let #(actual_pixel, expected_pixel) = pixels
+
+      list.zip(actual_pixel, expected_pixel)
+      |> list.fold(difference, fn(difference, bands) {
+        let #(actual_band, expected_band) = bands
+
+        int.max(difference, int.absolute_value(actual_band - expected_band))
+      })
+    })
+  })
 }
 
 pub fn read_test() {
@@ -56,90 +135,85 @@ pub fn custom_options_test() {
 }
 
 pub fn new_solid_grey_test() {
-  let assert Ok(bin) =
-    simplifile.read_bits("test/resources/solid_grey_6x6.avif")
-
   image.new(6, 6, color.Grey)
-  |> result.map(image.to_bit_array(
-    _,
-    image.AVIF(quality: 100, keep_metadata: True),
-  ))
-  |> should.equal(Ok(bin))
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/solid_grey_6x6.avif"),
+    tolerance: 2,
+  )
 }
 
 pub fn new_nongrey_test() {
-  let assert Ok(bin) =
-    simplifile.read_bits("test/resources/gleam_lucy_6x6.avif")
-
   image.new(6, 6, color.GleamLucy)
-  |> result.map(image.to_bit_array(
-    _,
-    image.AVIF(quality: 100, keep_metadata: True),
-  ))
-  |> should.equal(Ok(bin))
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/gleam_lucy_6x6.avif"),
+    tolerance: 2,
+  )
 }
 
 pub fn bit_array_avif_round_trip_test() {
   let assert Ok(bin) =
     simplifile.read_bits("test/resources/gleam_lucy_6x6.avif")
 
-  image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(
-    _,
-    image.AVIF(quality: 100, keep_metadata: True),
-  ))
-  |> should.equal(Ok(bin))
+  let original = image.from_bit_array(bin) |> should.be_ok
+
+  original
+  |> image.to_bit_array(image.AVIF(quality: 100, keep_metadata: True))
+  |> image.from_bit_array
+  |> should.be_ok
+  |> should_have_pixels_within(pixels_of(original), tolerance: 2)
 }
 
 pub fn bit_array_jpeg_round_trip_test() {
   let assert Ok(bin) =
     simplifile.read_bits("test/resources/gleam_lucy_6x6.jpeg")
 
-  image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(
-    _,
-    image.JPEG(quality: 100, keep_metadata: True),
-  ))
-  |> should.equal(Ok(bin))
+  let original = image.from_bit_array(bin) |> should.be_ok
+
+  original
+  |> image.to_bit_array(image.JPEG(quality: 100, keep_metadata: True))
+  |> image.from_bit_array
+  |> should.be_ok
+  |> should_have_pixels_within(pixels_of(original), tolerance: 2)
 }
 
 pub fn bit_array_png_round_trip_test() {
   let assert Ok(bin) = simplifile.read_bits("test/resources/gleam_lucy_6x6.png")
 
-  image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(Ok(bin))
+  let original = image.from_bit_array(bin) |> should.be_ok
+
+  original
+  |> image.to_bit_array(image.PNG)
+  |> image.from_bit_array
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(original))
 }
 
 pub fn bit_array_webp_round_trip_test() {
   let assert Ok(bin) =
     simplifile.read_bits("test/resources/gleam_lucy_6x6.webp")
 
-  image.from_bit_array(bin)
-  |> result.map(image.to_bit_array(
-    _,
-    image.WebP(quality: 100, keep_metadata: True),
-  ))
-  |> should.equal(Ok(bin))
+  let original = image.from_bit_array(bin) |> should.be_ok
+
+  original
+  |> image.to_bit_array(image.WebP(quality: 100, keep_metadata: True))
+  |> image.from_bit_array
+  |> should.be_ok
+  |> should_have_pixels_within(pixels_of(original), tolerance: 2)
 }
 
 pub fn composite_over_test() {
-  let assert Ok(bin) =
-    simplifile.read_bits("test/resources/gleam_composite.png")
-
   let assert Ok(base) = image.new(width: 12, height: 12, color: color.GleamLucy)
 
   let assert Ok(new) = image.new(width: 6, height: 6, color: color.GleamNavy)
 
   image.composite_over(base, with: new, at_left: 1, at_top: 1)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(Ok(bin))
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/gleam_composite.png"))
 }
 
 pub fn extract_area_test() {
-  let assert Ok(ext) =
-    simplifile.read_bits("test/resources/gleam_extraction.png")
-
   let assert Ok(base) = image.new(width: 12, height: 12, color: color.GleamLucy)
 
   let assert Ok(new) = image.new(width: 6, height: 6, color: color.GleamNavy)
@@ -151,8 +225,8 @@ pub fn extract_area_test() {
     comp,
     at: assert_ltwh(left: 3, top: 3, width: 6, height: 6),
   )
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(Ok(ext))
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/gleam_extraction.png"))
 }
 
 pub fn get_width_test() {
@@ -171,83 +245,73 @@ pub fn get_height_test() {
 
 pub fn resize_width_down_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamLucy)
+  let assert Ok(expected) =
+    image.new(width: 3, height: 2, color: color.GleamLucy)
 
   image.scale_width(img, to: 3)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(width: 3, height: 2, color: color.GleamLucy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn resize_width_up_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamLucy)
+  let assert Ok(expected) =
+    image.new(width: 12, height: 8, color: color.GleamLucy)
 
   image.scale_width(img, to: 12)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(width: 12, height: 8, color: color.GleamLucy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn resize_height_down_test() {
   let assert Ok(img) = image.new(width: 6, height: 8, color: color.GleamLucy)
+  let assert Ok(expected) =
+    image.new(width: 3, height: 4, color: color.GleamLucy)
 
   image.scale_height(img, to: 4)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(width: 3, height: 4, color: color.GleamLucy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn resize_height_up_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamNavy)
+  let assert Ok(expected) =
+    image.new(width: 18, height: 12, color: color.GleamNavy)
 
   image.scale_height(img, to: 12)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(width: 18, height: 12, color: color.GleamNavy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn resize_scale_down_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamLucy)
+  let assert Ok(expected) =
+    image.new(width: 3, height: 2, color: color.GleamLucy)
 
   image.scale(img, by: 0.5)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(width: 3, height: 2, color: color.GleamLucy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn resize_scale_up_test() {
   let assert Ok(img) = image.new(width: 6, height: 4, color: color.GleamNavy)
+  let assert Ok(expected) =
+    image.new(width: 18, height: 12, color: color.GleamNavy)
 
   image.scale(img, by: 3.0)
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(width: 18, height: 12, color: color.GleamNavy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn create_thumbnail_test() {
-  let thumb =
-    image.create_thumbnail("test/resources/gleam_composite.png", width: 9)
-    |> result.map(image.to_bit_array(
-      _,
-      image.JPEG(quality: 70, keep_metadata: True),
-    ))
-    |> result.replace_error(Nil)
-
-  thumb
-  |> should.equal(
-    simplifile.read_bits("test/resources/thumb.jpeg")
-    |> result.replace_error(Nil),
+  image.create_thumbnail("test/resources/gleam_composite.png", width: 9)
+  |> should.be_ok
+  |> image.to_bit_array(image.JPEG(quality: 70, keep_metadata: True))
+  |> image.from_bit_array
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/thumb.jpeg"),
+    tolerance: 2,
   )
 }
 
@@ -302,12 +366,8 @@ pub fn fill_test() {
     in: assert_ltwh(left: 0, top: 0, width: 5, height: 5),
     with: color.Blue,
   ))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/fill.png")
-    |> result.replace_error(Nil),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/fill.png"))
 }
 
 pub fn outline_test() {
@@ -318,100 +378,76 @@ pub fn outline_test() {
     with: color.GleamNavy,
     thickness: 2,
   ))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/outline.png")
-    |> result.replace_error(Nil),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/outline.png"))
 }
 
 pub fn border_test() {
   image.new(width: 20, height: 20, color: color.SkyBlue)
   |> result.try(image.border(_, with: color.PaleVioletRed, thickness: 10))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/border.png")
-    |> result.replace_error(Nil),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/border.png"))
 }
 
 pub fn round_circle_test() {
   image.new(20, 20, color.GleamLucy)
   |> result.try(image.round(_, by: 1000.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/circle_20x20.png")
-    |> result.replace_error(Nil),
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/circle_20x20.png"),
+    tolerance: 2,
   )
 }
 
 pub fn round_square_test() {
   image.new(20, 20, color.GleamLucy)
   |> result.try(image.round(_, by: 5.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/rounded_square_20x20.png")
-    |> result.replace_error(Nil),
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/rounded_square_20x20.png"),
+    tolerance: 2,
   )
 }
 
 pub fn blur_test() {
   image.read("test/resources/complex_13x13.png")
   |> result.try(image.blur(_, with: 1.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/blur_13x13.png")
-    |> result.replace_error(Nil),
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/blur_13x13.png"),
+    tolerance: 2,
   )
 }
 
 pub fn rotate_test() {
   image.read("test/resources/complex_13x13.png")
   |> result.try(image.rotate(_, by: 47.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/rotated_47.png")
-    |> result.replace_error(Nil),
+  |> should.be_ok
+  |> should_have_pixels_within(
+    pixels_of_file("test/resources/rotated_47.png"),
+    tolerance: 2,
   )
 }
 
 pub fn rotate90_test() {
   image.read("test/resources/complex_13x13.png")
   |> result.try(image.rotate(_, by: 90.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/rotated_90.png")
-    |> result.replace_error(Nil),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/rotated_90.png"))
 }
 
 pub fn rotate180_test() {
   image.read("test/resources/complex_13x13.png")
   |> result.try(image.rotate(_, by: 180.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/rotated_180.png")
-    |> result.replace_error(Nil),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/rotated_180.png"))
 }
 
 pub fn rotate270_test() {
   image.read("test/resources/complex_13x13.png")
   |> result.try(image.rotate(_, by: 270.0))
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> result.replace_error(Nil)
-  |> should.equal(
-    simplifile.read_bits("test/resources/rotated_270.png")
-    |> result.replace_error(Nil),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of_file("test/resources/rotated_270.png"))
 }
 
 pub fn to_pixel_list_success_test() {
@@ -459,13 +495,12 @@ pub fn from_pixel_list_success_size_test() {
 }
 
 pub fn from_pixel_list_success_value_test() {
+  let assert Ok(expected) = image.new(6, 6, color.GleamLucy)
+
   list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
   |> image.from_pixel_matrix
-  |> result.map(image.to_bit_array(_, image.PNG))
-  |> should.equal(
-    image.new(6, 6, color.GleamLucy)
-    |> result.map(image.to_bit_array(_, image.PNG)),
-  )
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
 }
 
 pub fn pixel_matrix_round_trip_dimensions_test() {

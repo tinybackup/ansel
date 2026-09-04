@@ -53,13 +53,10 @@ defmodule Ansel do
   end
 
   # Enum values, like the VIPS_ACCESS_SEQUENTIAL of access=VIPS_ACCESS_SEQUENTIAL,
-  # are atoms in Vix. Every enum value vips knows about already exists as an
-  # atom, so an unknown one is left as a string for the loader to complain about.
-  defp cast_enum_option_value("VIPS_" <> _ = value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> value
-  end
+  # are atoms in Vix. They cannot be looked up with String.to_existing_atom
+  # because the modules Vix defines them in are only loaded when they are first
+  # used, so the atom does not exist yet the first time an option needs it.
+  defp cast_enum_option_value("VIPS_" <> _ = value), do: String.to_atom(value)
 
   defp cast_enum_option_value(value), do: value
 
