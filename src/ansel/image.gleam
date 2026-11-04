@@ -263,8 +263,8 @@ pub fn from_pixel_matrix(
   let width = pixels |> list.first |> result.unwrap([]) |> list.length
   pixels
   |> list.flatten
-  |> list.map(fn(rgb) -> BitArray {
-    let assert color.RGB(r, g, b) = rgb
+  |> list.map(fn(color) -> BitArray {
+    let #(r, g, b) = color.to_rgb_tuple(color)
     <<r, g, b>>
   })
   |> bit_array.concat
