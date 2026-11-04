@@ -450,13 +450,13 @@ pub fn rotate270_test() {
   |> should_have_pixels(pixels_of_file("test/resources/rotated_270.png"))
 }
 
-pub fn to_pixel_list_success_test() {
+pub fn to_pixel_matrix_success_test() {
   image.new(6, 6, color.GleamLucy)
   |> result.try(image.to_pixel_matrix)
   |> should.be_ok
 }
 
-pub fn to_pixel_list_size_test() {
+pub fn to_pixel_matrix_size_test() {
   image.new(6, 6, color.GleamLucy)
   |> result.try(image.to_pixel_matrix)
   |> result.map(fn(pixel_rows) {
@@ -468,7 +468,7 @@ pub fn to_pixel_list_size_test() {
   |> should.equal(Ok(#(6, 6)))
 }
 
-pub fn to_pixel_list_value_test() {
+pub fn to_pixel_matrix_value_test() {
   image.new(6, 6, color.GleamLucy)
   |> result.try(image.to_pixel_matrix)
   |> result.map(fn(pixel_rows) {
@@ -481,20 +481,20 @@ pub fn to_pixel_list_value_test() {
   |> should.equal(Ok(True))
 }
 
-pub fn from_pixel_list_success_test() {
+pub fn from_pixel_matrix_success_test() {
   list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
   |> image.from_pixel_matrix
   |> should.be_ok
 }
 
-pub fn from_pixel_list_success_size_test() {
+pub fn from_pixel_matrix_success_size_test() {
   list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
   |> image.from_pixel_matrix
   |> result.map(fn(image) { #(image.get_height(image), image.get_width(image)) })
   |> should.equal(Ok(#(6, 6)))
 }
 
-pub fn from_pixel_list_success_value_test() {
+pub fn from_pixel_matrix_success_value_test() {
   let assert Ok(expected) = image.new(6, 6, color.GleamLucy)
 
   list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
