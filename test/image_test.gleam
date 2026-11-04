@@ -481,8 +481,14 @@ pub fn to_pixel_matrix_value_test() {
   |> should.equal(Ok(True))
 }
 
-pub fn from_pixel_matrix_success_test() {
+pub fn from_pixel_matrix_rgb_success_test() {
   list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_pixel_matrix
+  |> should.be_ok
+}
+
+pub fn from_pixel_matrix_named_success_test() {
+  list.repeat(list.repeat(color.Tomato, 6), 6)
   |> image.from_pixel_matrix
   |> should.be_ok
 }
@@ -494,10 +500,19 @@ pub fn from_pixel_matrix_success_size_test() {
   |> should.equal(Ok(#(6, 6)))
 }
 
-pub fn from_pixel_matrix_success_value_test() {
+pub fn from_pixel_matrix_rgb_success_value_test() {
   let assert Ok(expected) = image.new(6, 6, color.GleamLucy)
 
   list.repeat(list.repeat(color.RGB(255, 175, 243), 6), 6)
+  |> image.from_pixel_matrix
+  |> should.be_ok
+  |> should_have_pixels(pixels_of(expected))
+}
+
+pub fn from_pixel_matrix_named_success_value_test() {
+  let assert Ok(expected) = image.new(6, 6, color.Tomato)
+
+  list.repeat(list.repeat(color.Tomato, 6), 6)
   |> image.from_pixel_matrix
   |> should.be_ok
   |> should_have_pixels(pixels_of(expected))
