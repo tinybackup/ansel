@@ -230,17 +230,23 @@ pub fn to_pixel_matrix(
 ) -> Result(List(List(color.Color)), snag.Snag) {
   img
   |> to_rgb_matrix_ffi
-  |> result.map(fn(pixels) {
+  |> result.map_error(snag.new)
+  |> result.try(fn(pixels) {
     pixels
-    |> list.map(fn(pixel_row) {
+    |> list.try_map(fn(pixel_row) {
       pixel_row
-      |> list.map(fn(pixel) {
-        let assert [r, g, b] = pixel
-        color.RGB(r: r, g: g, b: b)
+      |> list.try_map(fn(pixel) {
+        case pixel {
+          [r, g, b] -> Ok(color.RGB(r, g, b))
+          [r, g, b, a] -> Ok(color.RGBA(r, g, b, a))
+          _ -> {
+            let str_pixel = list.map(pixel, int.to_string) |> string.join(", ")
+            snag.error("Unexpected pixel: " <> str_pixel)
+          }
+        }
       })
     })
   })
-  |> result.map_error(snag.new)
   |> snag.context("Unable to read image into pixel list")
 }
 
