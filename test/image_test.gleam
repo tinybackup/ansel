@@ -450,10 +450,33 @@ pub fn rotate270_test() {
   |> should_have_pixels(pixels_of_file("test/resources/rotated_270.png"))
 }
 
-pub fn to_pixel_matrix_success_test() {
-  image.new(6, 6, color.GleamLucy)
+pub fn to_pixel_matrix_rgb_success_test() {
+  let rgb = color.RGB(255, 175, 243)
+
+  image.new(6, 6, rgb)
   |> result.try(image.to_pixel_matrix)
   |> should.be_ok
+  |> should.equal(list.repeat(list.repeat(rgb, 6), 6))
+}
+
+pub fn to_pixel_matrix_rgba_success_test() {
+  let rgba = color.RGBA(255, 175, 243, 100)
+
+  image.new(6, 6, rgba)
+  |> result.try(image.to_pixel_matrix)
+  |> should.be_ok
+  |> should.equal(list.repeat(list.repeat(rgba, 6), 6))
+}
+
+pub fn to_pixel_matrix_named_success_test() {
+  let named = color.GleamLucy
+  let #(r, g, b) = color.to_rgb_tuple(named)
+  let rgb = color.RGB(r, g, b)
+
+  image.new(6, 6, named)
+  |> result.try(image.to_pixel_matrix)
+  |> should.be_ok
+  |> should.equal(list.repeat(list.repeat(rgb, 6), 6))
 }
 
 pub fn to_pixel_matrix_size_test() {
